@@ -21,13 +21,13 @@ export default function ToastContainer() {
     return () => { _addToast = null; };
   }, []);
 
-  const icons = { success: "✅", error: "❌", info: "ℹ️" };
+  const icons = { success: "âœ…", error: "âŒ", info: "â„¹ï¸" };
 
   return (
     <div className="toast-container">
       {toasts.map(t => (
         <div key={t.id} className={`toast toast-${t.type}`}>
-          <span>{icons[t.type] || "ℹ️"}</span>
+          <span>{icons[t.type] || "â„¹ï¸"}</span>
           <span>{t.message}</span>
         </div>
       ))}

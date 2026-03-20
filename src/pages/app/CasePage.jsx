@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { loadData, saveData } from "../../core/firebase.js";
-import { getShiftName, nowTimestamp } from "../../core/utils.js";
-import { showToast } from "../shared/Toast.jsx";
-import { detectCondition, buildArabicText, buildEnglishText, getSheetRows } from "../../core/conditions.js";
+import { loadData, saveData } from "../../services/firebase.js";
+import { getShiftName, nowTimestamp } from "../../utils/utils.js";
+import { showToast } from "../../components/ui/Toast.jsx";
+import { detectCondition, buildArabicText, buildEnglishText, getSheetRows } from "../../utils/conditions.js";
 
 const HOUSES = Array.from({ length: 16 }, (_, i) => String(i + 1));
 const AGES   = Array.from({ length: 35 }, (_, i) => String(i + 1));
@@ -15,10 +15,10 @@ const getQ   = () => JSON.parse(localStorage.getItem(OKEY) || "[]");
 const addQ   = c => { const q = getQ(); q.push(c); localStorage.setItem(OKEY, JSON.stringify(q)); };
 const clearQ = () => localStorage.removeItem(OKEY);
 
-/* ─── SmartTempInput ──────────────────────────────────────────────────────────
+/* â”€â”€â”€ SmartTempInput â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
    Keyboard-controlled. After 2 integer digits, auto-inserts "." and waits for
    one decimal digit. Format: [-]XX.X  (max). Arrow keys & scroll wheel work. */
-function SmartTempInput({ value, onChange, step = 0.1, placeholder = "——.—", color, disabled }) {
+function SmartTempInput({ value, onChange, step = 0.1, placeholder = "â€”â€”.â€”", color, disabled }) {
   const ref = useRef();
   const str = String(value ?? "");
   const isNeg  = str.startsWith("-");
@@ -79,8 +79,8 @@ function SmartTempInput({ value, onChange, step = 0.1, placeholder = "——.—
   );
 }
 
-/* ─── IntInput ──────────────────────────────────────────────────────────────── */
-function IntInput({ value, onChange, placeholder = "——", step = 1, color }) {
+/* â”€â”€â”€ IntInput â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+function IntInput({ value, onChange, placeholder = "â€”â€”", step = 1, color }) {
   const ref = useRef();
   const str = String(value ?? "");
   useEffect(() => {
@@ -114,7 +114,7 @@ function IntInput({ value, onChange, placeholder = "——", step = 1, color }) 
   );
 }
 
-/* ─── SpinBox ────────────────────────────────────────────────────────────────── */
+/* â”€â”€â”€ SpinBox â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 function SpinBox({ children, color, onMinus, onPlus, suffix }) {
   const [hov, setHov] = useState(false);
   return (
@@ -124,7 +124,7 @@ function SpinBox({ children, color, onMinus, onPlus, suffix }) {
       <button type="button" onClick={onMinus}
         style={{ width: "24px", height: "100%", background: hov ? "rgba(0,0,0,.12)" : "transparent", border: "none",
           color: hov ? "var(--text-primary)" : "transparent", cursor: "pointer", flexShrink: 0,
-          fontSize: ".85rem", fontWeight: "900", borderRadius: "7px 0 0 7px", transition: "all .18s" }}>−</button>
+          fontSize: ".85rem", fontWeight: "900", borderRadius: "7px 0 0 7px", transition: "all .18s" }}>âˆ’</button>
       {children}
       {suffix && <span style={{ color: "var(--text-muted)", fontSize: ".62rem", paddingLeft: "1px", flexShrink: 0 }}>{suffix}</span>}
       <button type="button" onClick={onPlus}
@@ -135,7 +135,7 @@ function SpinBox({ children, color, onMinus, onPlus, suffix }) {
   );
 }
 
-/* ─── SmartTimeInput ─────────────────────────────────────────────────────────── */
+/* â”€â”€â”€ SmartTimeInput â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 function SmartTimeInput({ label, h, m, p, onChange }) {
   const hRef = useRef(); const mRef = useRef(); const pickerRef = useRef();
   useEffect(() => { if (hRef.current) hRef.current.value = h || ""; }, [h]);
@@ -148,7 +148,7 @@ function SmartTimeInput({ label, h, m, p, onChange }) {
     const v = parseInt(hRef.current?.value);
     if (isNaN(v) || hRef.current?.value === "") { fire(); return; }
     if (v > 12) {
-      showToast("⚠️ نظام 12 ساعة | الساعة لا تتجاوز 12", "error");
+      showToast("âš ï¸ Ù†Ø¸Ø§Ù… 12 Ø³Ø§Ø¹Ø© | Ø§Ù„Ø³Ø§Ø¹Ø© Ù„Ø§ ØªØªØ¬Ø§ÙˆØ² 12", "error");
       hRef.current.value = "12"; fire(); return;
     }
     if (v < 1) { hRef.current.value = "01"; fire(); return; }
@@ -180,7 +180,7 @@ function SmartTimeInput({ label, h, m, p, onChange }) {
             onChange={fire} onBlur={validateHour}
             style={{ width: "24px", background: "transparent", border: "none", color: "var(--text-primary)", fontFamily: "Arial", fontSize: ".9rem", fontWeight: "800", textAlign: "center", outline: "none", lineHeight: "36px", caretColor: "var(--accent-blue)" }} />
 
-          {/* Colon — perfectly centered */}
+          {/* Colon â€” perfectly centered */}
           <span style={{ color: "var(--text-muted)", fontWeight: "900", fontSize: "1.1rem", lineHeight: "1", alignSelf: "center", marginBottom: "2px", userSelect: "none" }}>:</span>
 
           <input ref={mRef} type="number" min="0" max="59" placeholder="--" defaultValue={m}
@@ -191,14 +191,14 @@ function SmartTimeInput({ label, h, m, p, onChange }) {
           <div style={{ flex: 1 }} />
 
           {/* Clock icon */}
-          <button type="button" title="اختر الوقت" onClick={() => { try { pickerRef.current?.showPicker(); } catch {} }}
+          <button type="button" title="Ø§Ø®ØªØ± Ø§Ù„ÙˆÙ‚Øª" onClick={() => { try { pickerRef.current?.showPicker(); } catch {} }}
             style={{ width: "26px", height: "26px", background: "transparent", border: "none", cursor: "pointer", color: "var(--text-muted)", fontSize: ".9rem", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "5px", transition: "all .15s" }}
             onMouseEnter={e => { e.currentTarget.style.background = "var(--bg-secondary)"; e.currentTarget.style.color = "var(--accent-blue)"; }}
             onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--text-muted)"; }}>
-            🕒
+            ðŸ•’
           </button>
 
-          {/* Hidden native time input — positioned so picker appears just below this field */}
+          {/* Hidden native time input â€” positioned so picker appears just below this field */}
           <input ref={pickerRef} type="time" tabIndex={-1}
             style={{ position: "absolute", top: "100%", right: "0", width: "1px", height: "1px", opacity: 0, pointerEvents: "none", border: "none", padding: 0 }}
             onChange={(e) => {
@@ -220,7 +220,7 @@ function SmartTimeInput({ label, h, m, p, onChange }) {
   );
 }
 
-/* ══════════════════════════ MAIN PAGE ══════════════════════════════════════════ */
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• MAIN PAGE â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 export default function CasePage({ user }) {
   const [farm, setFarm]             = useState("");
   const [house, setHouse]           = useState("");
@@ -248,7 +248,7 @@ export default function CasePage({ user }) {
   const [narrow, setNarrow]           = useState(window.innerWidth < 900);
   const [caseSaved, setCaseSaved]     = useState(false); // tracks if current form was saved
 
-  const farmType = user?.farm_type || "مزرعة (تسمين)";
+  const farmType = user?.farm_type || "Ù…Ø²Ø±Ø¹Ø© (ØªØ³Ù…ÙŠÙ†)";
 
   useEffect(() => {
     const onR = () => setNarrow(window.innerWidth < 900);
@@ -272,8 +272,8 @@ export default function CasePage({ user }) {
 
   async function flush() {
     const q = getQ(); if (!q.length) return;
-    try { const u = [...history, ...q]; await saveData("history", u); setHistory(u); clearQ(); setQueueCount(0); showToast(`✅ مزامنة ${q.length} حالة`, "success"); }
-    catch { showToast("⚠️ تعذّرت المزامنة", "error"); }
+    try { const u = [...history, ...q]; await saveData("history", u); setHistory(u); clearQ(); setQueueCount(0); showToast(`âœ… Ù…Ø²Ø§Ù…Ù†Ø© ${q.length} Ø­Ø§Ù„Ø©`, "success"); }
+    catch { showToast("âš ï¸ ØªØ¹Ø°Ù‘Ø±Øª Ø§Ù„Ù…Ø²Ø§Ù…Ù†Ø©", "error"); }
   }
 
   useEffect(() => {
@@ -282,7 +282,7 @@ export default function CasePage({ user }) {
     setAgeSugg(p?.raw_data?.age ? p.raw_data.age + 1 : null);
   }, [farm, history]);
 
-  // ─── Condition detection ──────────────────────────────────────────────────
+  // â”€â”€â”€ Condition detection â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const detected  = detectCondition({ rate, humidity: hum, co2, age, farmType, conditionsTable: condTable });
   const alerts    = detected.alerts;
   const rule      = detected.rule;
@@ -292,33 +292,33 @@ export default function CasePage({ user }) {
 
   // Temperature condition: rate vs setpoint (user-entered rate)
   const tempCond = rateN !== null && spN !== null
-    ? (rateN > spN ? "ارتفاع" : rateN < spN ? "انخفاض" : "طبيعي")
+    ? (rateN > spN ? "Ø§Ø±ØªÙØ§Ø¹" : rateN < spN ? "Ø§Ù†Ø®ÙØ§Ø¶" : "Ø·Ø¨ÙŠØ¹ÙŠ")
     : null;
 
   const condition = specialCond || tempCond || null;
   const deviation = rateN !== null && spN !== null ? rateN - spN : null;
   const avgTemp   = sMode === "temp" ? avg(sensors) : null;
 
-  const condColor = condition === "ارتفاع" ? "#ef4444"
-    : condition === "انخفاض" ? "#3b82f6"
-    : condition === "طبيعي"  ? "#22c55e"
-    : specialCond === "مشكلة هيتر" ? "#f97316"
-    : specialCond === "توقف مراوح" ? "#a855f7"
+  const condColor = condition === "Ø§Ø±ØªÙØ§Ø¹" ? "#ef4444"
+    : condition === "Ø§Ù†Ø®ÙØ§Ø¶" ? "#3b82f6"
+    : condition === "Ø·Ø¨ÙŠØ¹ÙŠ"  ? "#22c55e"
+    : specialCond === "Ù…Ø´ÙƒÙ„Ø© Ù‡ÙŠØªØ±" ? "#f97316"
+    : specialCond === "ØªÙˆÙ‚Ù Ù…Ø±Ø§ÙˆØ­" ? "#a855f7"
     : "#8b949e";
 
   const toMins  = ({h, m, p}) => { const hv = parseInt(h)||0, mv = parseInt(m)||0; return (p==="PM"&&hv!==12?hv+12:p==="AM"&&hv===12?0:hv)*60+mv; };
   const durMins = () => { if (!startTime.h || !endTime.h) return 0; const s = toMins(startTime), e = toMins(endTime); return e < s ? e+1440-s : e-s; };
-  const durText = () => { const d = durMins(); if (d <= 0) return ""; const h = Math.floor(d/60), m = d%60; return h > 0 ? `${h}س${m>0?` ${m}د`:""}` : `${m} دقيقة`; };
+  const durText = () => { const d = durMins(); if (d <= 0) return ""; const h = Math.floor(d/60), m = d%60; return h > 0 ? `${h}Ø³${m>0?` ${m}Ø¯`:""}` : `${m} Ø¯Ù‚ÙŠÙ‚Ø©`; };
   const startStr = () => `${(startTime.h||"00").padStart(2,"0")}:${(startTime.m||"00").padStart(2,"0")} ${startTime.p}`;
 
   function smartFill() {
-    if (!farm.trim()) { showToast("أدخل رقم المزرعة", "error"); return; }
+    if (!farm.trim()) { showToast("Ø£Ø¯Ø®Ù„ Ø±Ù‚Ù… Ø§Ù„Ù…Ø²Ø±Ø¹Ø©", "error"); return; }
     const p = [...history].reverse().find(h => h.farm?.trim() === farm.trim() && (!house || h.house === house));
-    if (!p) { showToast("لا توجد بيانات سابقة", "info"); return; }
+    if (!p) { showToast("Ù„Ø§ ØªÙˆØ¬Ø¯ Ø¨ÙŠØ§Ù†Ø§Øª Ø³Ø§Ø¨Ù‚Ø©", "info"); return; }
     const r = p.raw_data || {};
     if (r.set_point) setSp(String(r.set_point));
     if (r.age && ageSugg) setAge(String(ageSugg));
-    showToast("تم الملء الذكي ✨", "success");
+    showToast("ØªÙ… Ø§Ù„Ù…Ù„Ø¡ Ø§Ù„Ø°ÙƒÙŠ âœ¨", "success");
   }
 
   function buildCase() {
@@ -328,7 +328,7 @@ export default function CasePage({ user }) {
       by_user: user.username, seen: false,
       raw_data: { f_type: farmType, age: parseInt(age)||0, set_point: spN||0,
         sensors: sensors.map(s => ({ val: sf(s)??0 })), rate: sf(rate)||0,
-        condition: condition||"انخفاض",
+        condition: condition||"Ø§Ù†Ø®ÙØ§Ø¶",
         start_h: startTime.h, start_m: startTime.m, start_p: startTime.p,
         end_h: endTime.h, end_m: endTime.m, end_p: endTime.p, duration: durText(),
         nh3: nh3.trim(), co2: co2.trim(), hum: hum.trim(), press: press.trim(),
@@ -338,15 +338,15 @@ export default function CasePage({ user }) {
 
   async function handleSubmit(e) {
     e.preventDefault();
-    if (!farm.trim()) { showToast("⚠️ أدخل رقم المزرعة", "error"); return; }
-    if (!house)       { showToast("⚠️ اختر الحظيرة", "error"); return; }
-    if (!sp)          { showToast("⚠️ أدخل السيت بوينت", "error"); return; }
+    if (!farm.trim()) { showToast("âš ï¸ Ø£Ø¯Ø®Ù„ Ø±Ù‚Ù… Ø§Ù„Ù…Ø²Ø±Ø¹Ø©", "error"); return; }
+    if (!house)       { showToast("âš ï¸ Ø§Ø®ØªØ± Ø§Ù„Ø­Ø¸ÙŠØ±Ø©", "error"); return; }
+    if (!sp)          { showToast("âš ï¸ Ø£Ø¯Ø®Ù„ Ø§Ù„Ø³ÙŠØª Ø¨ÙˆÙŠÙ†Øª", "error"); return; }
     setSaving(true);
     const c = buildCase();
     if (isOnline) {
-      try { const u = [...history, c]; await saveData("history", u); setHistory(u); if (!savedFarms.includes(c.farm)) setSavedFarms(p => [...p, c.farm]); setLastCase(c); showToast("✅ تم حفظ الحالة", "success"); reset(); }
-      catch { showToast("❌ خطأ في الحفظ", "error"); }
-    } else { addQ(c); setQueueCount(getQ().length); setLastCase(c); showToast("📴 حُفظ محلياً", "info"); reset(); }
+      try { const u = [...history, c]; await saveData("history", u); setHistory(u); if (!savedFarms.includes(c.farm)) setSavedFarms(p => [...p, c.farm]); setLastCase(c); showToast("âœ… ØªÙ… Ø­ÙØ¸ Ø§Ù„Ø­Ø§Ù„Ø©", "success"); reset(); }
+      catch { showToast("âŒ Ø®Ø·Ø£ ÙÙŠ Ø§Ù„Ø­ÙØ¸", "error"); }
+    } else { addQ(c); setQueueCount(getQ().length); setLastCase(c); showToast("ðŸ“´ Ø­ÙÙØ¸ Ù…Ø­Ù„ÙŠØ§Ù‹", "info"); reset(); }
     setSaving(false);
   }
 
@@ -359,9 +359,9 @@ export default function CasePage({ user }) {
 
   // Save case once, then copy. Subsequent copies reuse lastCase without re-saving.
   async function saveAndCopy(copyFn) {
-    if (!farm.trim()) { showToast("⚠️ أدخل رقم المزرعة", "error"); return; }
-    if (!house)       { showToast("⚠️ أدخل الحظيرة", "error"); return; }
-    if (!sp)          { showToast("⚠️ أدخل السيت بوينت", "error"); return; }
+    if (!farm.trim()) { showToast("âš ï¸ Ø£Ø¯Ø®Ù„ Ø±Ù‚Ù… Ø§Ù„Ù…Ø²Ø±Ø¹Ø©", "error"); return; }
+    if (!house)       { showToast("âš ï¸ Ø£Ø¯Ø®Ù„ Ø§Ù„Ø­Ø¸ÙŠØ±Ø©", "error"); return; }
+    if (!sp)          { showToast("âš ï¸ Ø£Ø¯Ø®Ù„ Ø§Ù„Ø³ÙŠØª Ø¨ÙˆÙŠÙ†Øª", "error"); return; }
     setSaving(true);
     let caseObj = caseSaved && lastCase ? lastCase : null;
     if (!caseObj) {
@@ -372,11 +372,11 @@ export default function CasePage({ user }) {
           await saveData("history", upd);
           setHistory(upd);
           if (!savedFarms.includes(caseObj.farm)) setSavedFarms(p => [...p, caseObj.farm]);
-        } catch { showToast("❌ خطأ في الحفظ", "error"); setSaving(false); return; }
+        } catch { showToast("âŒ Ø®Ø·Ø£ ÙÙŠ Ø§Ù„Ø­ÙØ¸", "error"); setSaving(false); return; }
       } else {
         addQ(caseObj);
         setQueueCount(getQ().length);
-        showToast("📴 حُفظ محلياً — سيُرسل عند عودة الاتصال", "info");
+        showToast("ðŸ“´ Ø­ÙÙØ¸ Ù…Ø­Ù„ÙŠØ§Ù‹ â€” Ø³ÙŠÙØ±Ø³Ù„ Ø¹Ù†Ø¯ Ø¹ÙˆØ¯Ø© Ø§Ù„Ø§ØªØµØ§Ù„", "info");
       }
       setLastCase(caseObj);
       setCaseSaved(true);
@@ -386,12 +386,12 @@ export default function CasePage({ user }) {
     reset();
   }
 
-  function copyAr()    { saveAndCopy(c => { navigator.clipboard.writeText(buildArabicText(c)); showToast("📱 تم الحفظ + نسخ عربي", "success"); }); }
-  function copyEn()    { saveAndCopy(c => { navigator.clipboard.writeText(buildEnglishText(c)); showToast("📱 Saved + Copied EN", "success"); }); }
-  function copySheet() { saveAndCopy(c => { const r = getSheetRows(c); if (!r.length){showToast("لا بيانات","error");return;} navigator.clipboard.writeText(r.map(x=>x.join("\t")).join("\n")); showToast("📋 تم الحفظ + نسخ Excel", "success"); }); }
+  function copyAr()    { saveAndCopy(c => { navigator.clipboard.writeText(buildArabicText(c)); showToast("ðŸ“± ØªÙ… Ø§Ù„Ø­ÙØ¸ + Ù†Ø³Ø® Ø¹Ø±Ø¨ÙŠ", "success"); }); }
+  function copyEn()    { saveAndCopy(c => { navigator.clipboard.writeText(buildEnglishText(c)); showToast("ðŸ“± Saved + Copied EN", "success"); }); }
+  function copySheet() { saveAndCopy(c => { const r = getSheetRows(c); if (!r.length){showToast("Ù„Ø§ Ø¨ÙŠØ§Ù†Ø§Øª","error");return;} navigator.clipboard.writeText(r.map(x=>x.join("\t")).join("\n")); showToast("ðŸ“‹ ØªÙ… Ø§Ù„Ø­ÙØ¸ + Ù†Ø³Ø® Excel", "success"); }); }
 
   const dur = durText(), durM = durMins(), live = buildCase();
-  const ALL_SPL = ["مشكلة هيتر", "توقف مراوح", ...otherConds];
+  const ALL_SPL = ["Ù…Ø´ÙƒÙ„Ø© Ù‡ÙŠØªØ±", "ØªÙˆÙ‚Ù Ù…Ø±Ø§ÙˆØ­", ...otherConds];
 
   const card = { background: "var(--bg-secondary)", border: "1px solid var(--border)", borderRadius: "var(--radius-md)", padding: "16px" };
   const lbl  = { fontSize: ".68rem", color: "var(--text-muted)", fontWeight: "700", marginBottom: "4px" };
@@ -399,63 +399,63 @@ export default function CasePage({ user }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%", gap: "8px", overflow: "hidden" }}>
 
-      {/* ── STATUS BAR ─────────────────────────────────────────────────────── */}
+      {/* â”€â”€ STATUS BAR â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       <div style={{ display: "flex", alignItems: "center", gap: "7px", flexShrink: 0, flexWrap: "wrap" }}>
-        <span style={{ fontWeight: "900", fontSize: ".95rem" }}>➕ تسجيل حالة</span>
-        <span style={{ fontSize: ".74rem", color: "var(--text-muted)" }}>شفت {getShiftName()}</span>
+        <span style={{ fontWeight: "900", fontSize: ".95rem" }}>âž• ØªØ³Ø¬ÙŠÙ„ Ø­Ø§Ù„Ø©</span>
+        <span style={{ fontSize: ".74rem", color: "var(--text-muted)" }}>Ø´ÙØª {getShiftName()}</span>
 
         {/* Condition badge */}
         <div style={{ display: "flex", alignItems: "center", gap: "5px", background: condColor+"18", border: `1px solid ${condColor}44`, borderRadius: "100px", padding: "3px 10px", transition: "all .3s" }}>
           <span style={{ width: "5px", height: "5px", borderRadius: "50%", background: condColor, display: "inline-block", animation: "pulse 2s infinite" }} />
-          <span style={{ color: condColor, fontWeight: "800", fontSize: ".78rem" }}>{condition||"جارٍ الكشف..."}</span>
-          {deviation !== null && <span style={{ fontFamily: "Arial", fontWeight: "900", fontSize: ".72rem", opacity: .8 }}>({deviation>0?"+":""}{fv(deviation)}°)</span>}
+          <span style={{ color: condColor, fontWeight: "800", fontSize: ".78rem" }}>{condition||"Ø¬Ø§Ø±Ù Ø§Ù„ÙƒØ´Ù..."}</span>
+          {deviation !== null && <span style={{ fontFamily: "Arial", fontWeight: "900", fontSize: ".72rem", opacity: .8 }}>({deviation>0?"+":""}{fv(deviation)}Â°)</span>}
         </div>
 
-        {/* Other conditions — compact inline selector */}
+        {/* Other conditions â€” compact inline selector */}
         <select value={specialCond||""} onChange={e => setSpecialCond(e.target.value||null)}
           style={{ padding: "3px 8px", borderRadius: "100px", border: `1px solid ${specialCond?"#f97316":"var(--border)"}`,
             background: specialCond ? "rgba(249,115,22,.12)" : "var(--bg-tertiary)",
             color: specialCond ? "#f97316" : "var(--text-muted)", fontFamily: "var(--font-ar)",
             fontSize: ".74rem", fontWeight: "700", outline: "none", cursor: "pointer", maxWidth: "150px" }}>
-          <option value="">⚠️ حالة خاصة</option>
+          <option value="">âš ï¸ Ø­Ø§Ù„Ø© Ø®Ø§ØµØ©</option>
           {ALL_SPL.map(s => <option key={s} value={s}>{s}</option>)}
         </select>
 
         {/* Online */}
         <div style={{ display: "flex", alignItems: "center", gap: "3px", fontSize: ".7rem", color: isOnline?"#22c55e":"#f97316", fontWeight: "700" }}>
           <span style={{ width: "5px", height: "5px", borderRadius: "50%", background: isOnline?"#22c55e":"#f97316" }} />
-          {isOnline?"متصل":`غير متصل${queueCount>0?` (${queueCount})`:""}`}
+          {isOnline?"Ù…ØªØµÙ„":`ØºÙŠØ± Ù…ØªØµÙ„${queueCount>0?` (${queueCount})`:""}`}
         </div>
 
         {alerts.map((a, i) => <div key={i} style={{ fontSize: ".68rem", padding: "2px 7px", borderRadius: "100px", background: "rgba(249,115,22,.12)", border: "1px solid #f97316", color: "#f97316", fontWeight: "700" }}>{a.text}</div>)}
       </div>
 
-      {/* ── FORM  ──────────────────────────────────────────────────────────── */}
+      {/* â”€â”€ FORM  â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       <form onSubmit={e => e.preventDefault()} dir="rtl"
         className={`grid grid-cols-1 lg:grid-cols-3 gap-4 h-full text-right ${narrow ? 'overflow-y-auto' : ''}`}
         style={{ minHeight: 0 }}>
 
-        {/* ══ LEFT: DATA ENTRY ════════════════════════════════════════════════ */}
+        {/* â•â• LEFT: DATA ENTRY â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
         <div className="flex flex-col gap-4 lg:col-span-2 h-full overflow-y-auto" style={{ minHeight: 0, paddingRight: "4px" }}>
 
           {/* Farm / House / Age */}
           <div style={card}>
             <div className="flex justify-between items-center mb-4">
-              <span className="font-bold text-base">🏡 بيانات المزرعة</span>
+              <span className="font-bold text-base">ðŸ¡ Ø¨ÙŠØ§Ù†Ø§Øª Ø§Ù„Ù…Ø²Ø±Ø¹Ø©</span>
               <div className="flex gap-2">
                 {ageSugg && !age && (
                   <button type="button" onClick={() => setAge(String(ageSugg))}
                     style={{ padding: "1px 7px", borderRadius: "100px", border: "1px solid #f59e0b", background: "rgba(245,158,11,.1)", color: "#f59e0b", fontSize: ".68rem", fontWeight: "700", cursor: "pointer" }}>
-                    💡 {ageSugg}ي
+                    ðŸ’¡ {ageSugg}ÙŠ
                   </button>
                 )}
-                <button type="button" className="btn btn-ghost" style={{ padding: "3px 10px", fontSize: ".72rem" }} onClick={smartFill}>✨ تعبئة ذكية</button>
+                <button type="button" className="btn btn-ghost" style={{ padding: "3px 10px", fontSize: ".72rem" }} onClick={smartFill}>âœ¨ ØªØ¹Ø¨Ø¦Ø© Ø°ÙƒÙŠØ©</button>
               </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full" style={{ minWidth: 0 }}>
               <div style={{ position: "relative" }}>
-                <div style={lbl}>رقم المزرعة *</div>
-                <input className="form-input" type="number" inputMode="numeric" placeholder="رقم" value={farm}
+                <div style={lbl}>Ø±Ù‚Ù… Ø§Ù„Ù…Ø²Ø±Ø¹Ø© *</div>
+                <input className="form-input" type="number" inputMode="numeric" placeholder="Ø±Ù‚Ù…" value={farm}
                   onChange={e => { setFarm(e.target.value); setFarmSugg(savedFarms.filter(f => f.includes(e.target.value)).slice(0,5)); setShowFDrop(e.target.value.length>0); }}
                   onBlur={() => setTimeout(() => setShowFDrop(false), 150)}
                   style={{ padding: "4px 6px", fontSize: ".85rem", height: "32px", fontWeight: "700" }} />
@@ -466,46 +466,46 @@ export default function CasePage({ user }) {
                         style={{ padding: "5px 10px", cursor: "pointer", fontSize: ".82rem", fontWeight: "700" }}
                         onMouseEnter={e => e.target.style.background = "var(--bg-tertiary)"}
                         onMouseLeave={e => e.target.style.background = "transparent"}>
-                        🏡 {f}
+                        ðŸ¡ {f}
                       </div>
                     ))}
                   </div>
                 )}
               </div>
               <div>
-                <div style={lbl}>الحظيرة *</div>
+                <div style={lbl}>Ø§Ù„Ø­Ø¸ÙŠØ±Ø© *</div>
                 <input className="form-input" list="house-opts" placeholder="1-16" value={house}
                   onChange={e => setHouse(e.target.value)}
                   style={{ padding: "4px 6px", fontSize: ".85rem", height: "32px", fontWeight: "700" }} />
                 <datalist id="house-opts">{HOUSES.map(h => <option key={h} value={h} />)}</datalist>
               </div>
               <div>
-                <div style={lbl}>العمر (يوم)</div>
+                <div style={lbl}>Ø§Ù„Ø¹Ù…Ø± (ÙŠÙˆÙ…)</div>
                 <input className="form-input" list="age-opts" placeholder="1-35" value={age}
                   onChange={e => setAge(e.target.value)}
                   style={{ padding: "4px 6px", fontSize: ".85rem", height: "32px", fontWeight: "700" }} />
                 <datalist id="age-opts">{AGES.map(a => <option key={a} value={a} />)}</datalist>
               </div>
             </div>
-            {rule && <div style={{ marginTop: "4px", fontSize: ".6rem", color: "var(--text-muted)" }}>📊 {farmType} · ي{rule.ageFrom}–{rule.ageTo} | L{rule.lowTemp??'—'} H+{rule.highTemp??'—'} | RH {rule.lowRH||'—'}%</div>}
+            {rule && <div style={{ marginTop: "4px", fontSize: ".6rem", color: "var(--text-muted)" }}>ðŸ“Š {farmType} Â· ÙŠ{rule.ageFrom}â€“{rule.ageTo} | L{rule.lowTemp??'â€”'} H+{rule.highTemp??'â€”'} | RH {rule.lowRH||'â€”'}%</div>}
           </div>
 
           {/* SP + Rate */}
           <div style={card} className="flex flex-col flex-shrink-0">
-            <div className="font-bold text-sm md:text-base mb-3">🌡️ السيت بوينت والمعدل</div>
+            <div className="font-bold text-sm md:text-base mb-3">ðŸŒ¡ï¸ Ø§Ù„Ø³ÙŠØª Ø¨ÙˆÙŠÙ†Øª ÙˆØ§Ù„Ù…Ø¹Ø¯Ù„</div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full" style={{ minWidth: 0 }}>
               <div>
-                <div style={lbl}>سيت بوينت *</div>
-                <SpinBox color={sp?"var(--accent-green)":"var(--border)"} suffix="°"
+                <div style={lbl}>Ø³ÙŠØª Ø¨ÙˆÙŠÙ†Øª *</div>
+                <SpinBox color={sp?"var(--accent-green)":"var(--border)"} suffix="Â°"
                   onMinus={() => setSp(fv((sf(sp)??32)-.5))} onPlus={() => setSp(fv((sf(sp)??32)+.5))}>
                   <SmartTempInput value={sp} onChange={setSp} step={.5} placeholder="32.0" />
                 </SpinBox>
               </div>
               <div>
                 <div style={{ ...lbl, color: rateN !== null ? condColor : "var(--text-muted)" }}>
-                  المعدل * {deviation !== null ? (deviation > 0 ? "⬆️ ارتفاع" : deviation < 0 ? "⬇️ انخفاض" : "✅ طبيعي") : ""}
+                  Ø§Ù„Ù…Ø¹Ø¯Ù„ * {deviation !== null ? (deviation > 0 ? "â¬†ï¸ Ø§Ø±ØªÙØ§Ø¹" : deviation < 0 ? "â¬‡ï¸ Ø§Ù†Ø®ÙØ§Ø¶" : "âœ… Ø·Ø¨ÙŠØ¹ÙŠ") : ""}
                 </div>
-                <SpinBox color={rateN !== null ? condColor : "var(--border)"} suffix="°"
+                <SpinBox color={rateN !== null ? condColor : "var(--border)"} suffix="Â°"
                   onMinus={() => setRate(fv((sf(rate)??spN??32) - .1))} onPlus={() => setRate(fv((sf(rate)??spN??32) + .1))}>
                   <SmartTempInput value={rate} onChange={setRate} step={.1} placeholder="32.0" color={rateN !== null ? condColor : undefined} />
                 </SpinBox>
@@ -520,27 +520,27 @@ export default function CasePage({ user }) {
             )}
           </div>
 
-          {/* ⏰ TIME — between SP and Sensors */}
+          {/* â° TIME â€” between SP and Sensors */}
           <div style={card} className="flex flex-col flex-shrink-0">
-            <div className="font-bold text-sm md:text-base mb-3">⏰ الوقت</div>
+            <div className="font-bold text-sm md:text-base mb-3">â° Ø§Ù„ÙˆÙ‚Øª</div>
             <div className="flex gap-4 items-end flex-wrap w-full" style={{ minWidth: 0 }}>
-              <SmartTimeInput label="البداية" {...startTime} onChange={v => setStartTime(p => ({...p,...v}))} />
-              <SmartTimeInput label="النهاية" {...endTime}   onChange={v => setEndTime(p => ({...p,...v}))} />
+              <SmartTimeInput label="Ø§Ù„Ø¨Ø¯Ø§ÙŠØ©" {...startTime} onChange={v => setStartTime(p => ({...p,...v}))} />
+              <SmartTimeInput label="Ø§Ù„Ù†Ù‡Ø§ÙŠØ©" {...endTime}   onChange={v => setEndTime(p => ({...p,...v}))} />
               {dur && (
                 <div style={{ padding: "3px 8px", background: durM>=40?"rgba(249,115,22,.12)":"rgba(34,197,94,.08)",
                   border: `1px solid ${durM>=40?"#f97316":"#22c55e"}`, borderRadius: "6px",
                   fontSize: ".7rem", fontWeight: "800", color: durM>=40?"#f97316":"#22c55e", flexShrink: 0, alignSelf: "flex-end", marginBottom: "1px" }}>
-                  {dur}{durM>=40?" ⚠️":""}
+                  {dur}{durM>=40?" âš ï¸":""}
                 </div>
               )}
             </div>
           </div>
 
-          {/* SENSORS — animated tabs */}
+          {/* SENSORS â€” animated tabs */}
           <div style={card} className="flex flex-col flex-1 overflow-hidden h-full">
             {/* Tab bar */}
             <div className="flex flex-shrink-0 mb-4 p-1 rounded-lg gap-1" style={{ background: "var(--bg-tertiary)" }}>
-              {[{k:"temp",l:"🌡️ حرارية"},{k:"chem",l:"🧪 كيميائية"}].map(({k,l}) => (
+              {[{k:"temp",l:"ðŸŒ¡ï¸ Ø­Ø±Ø§Ø±ÙŠØ©"},{k:"chem",l:"ðŸ§ª ÙƒÙŠÙ…ÙŠØ§Ø¦ÙŠØ©"}].map(({k,l}) => (
                 <button key={k} type="button"
                   onClick={() => { setSMode(k); if(k==="temp"){setNh3("");setCo2("");setHum("");setPress("");}else{setSensors(["","","","","",""]);setRate("");} }}
                   style={{ flex: 1, padding: "5px", border: "none", cursor: "pointer", borderRadius: "4px", fontFamily: "var(--font-ar)", fontSize: ".76rem", fontWeight: "700", transition: "all .25s", background: sMode===k?"var(--accent-blue)":"transparent", color: sMode===k?"#fff":"var(--text-muted)" }}>
@@ -553,7 +553,7 @@ export default function CasePage({ user }) {
             <div style={{ flex: 1, position: "relative", overflow: "hidden" }}>
               <div style={{ display: "flex", width: "200%", height: "100%", transition: "transform .35s cubic-bezier(.4,0,.2,1)", transform: sMode==="temp"?"translateX(0)":"translateX(50%)" }}>
 
-                {/* ── Temperature ── */}
+                {/* â”€â”€ Temperature â”€â”€ */}
                 <div className="flex flex-col gap-2 overflow-y-auto w-full flex-shrink-0" style={{ width: "50%", paddingLeft: "12px", paddingRight: "4px" }}>
                   <div className="grid grid-cols-3 gap-2 w-full flex-1 mb-2">
                     {sensors.slice(0, 6).map((val, i) => {
@@ -563,8 +563,8 @@ export default function CasePage({ user }) {
                       const bg = diff===null?"var(--bg-tertiary)":diff>0?"rgba(239,68,68,.07)":diff<0?"rgba(59,130,246,.07)":"rgba(34,197,94,.05)";
                       return (
                         <div key={i} style={{ background: bg, border: `1px solid ${vN!==null?sc:"var(--border)"}`, borderRadius: "8px", padding: "6px 4px", display: "flex", flexDirection: "column", justifyContent: "center", transition: "all .2s", minHeight: "60px" }}>
-                          <div style={{ fontSize: ".65rem", color: "var(--text-muted)", fontWeight: "800", marginBottom: "4px", textAlign: "center" }}>حساس {i+1}</div>
-                          <SpinBox color={sc} suffix="°"
+                          <div style={{ fontSize: ".65rem", color: "var(--text-muted)", fontWeight: "800", marginBottom: "4px", textAlign: "center" }}>Ø­Ø³Ø§Ø³ {i+1}</div>
+                          <SpinBox color={sc} suffix="Â°"
                             onMinus={() => { const n=[...sensors]; n[i]=fv((sf(n[i])??spN??32)-.1); setSensors(n); }}
                             onPlus={() => { const n=[...sensors]; n[i]=fv((sf(n[i])??spN??32)+.1); setSensors(n); }}>
                             <SmartTempInput value={val} step={.1} color={textColor} onChange={v => { const n=[...sensors]; n[i]=v; setSensors(n); }} />
@@ -576,19 +576,19 @@ export default function CasePage({ user }) {
                   </div>
                   {avgTemp!==null && (
                     <div style={{ padding:"10px 14px",background:"var(--bg-primary)",borderRadius:"10px",display:"flex",justifyContent:"space-between",alignItems:"center",flexShrink:0, marginTop: "auto" }}>
-                      <span style={{ fontSize:".75rem",color:"var(--text-muted)", fontWeight: "700" }}>📊 متوسط الحرارة</span>
-                      <span style={{ fontWeight:"900",color:condColor,fontFamily:"monospace, Arial",fontSize:".95rem" }}>{avgTemp.toFixed(2)}°C</span>
+                      <span style={{ fontSize:".75rem",color:"var(--text-muted)", fontWeight: "700" }}>ðŸ“Š Ù…ØªÙˆØ³Ø· Ø§Ù„Ø­Ø±Ø§Ø±Ø©</span>
+                      <span style={{ fontWeight:"900",color:condColor,fontFamily:"monospace, Arial",fontSize:".95rem" }}>{avgTemp.toFixed(2)}Â°C</span>
                     </div>
                   )}
                 </div>
 
-                {/* ── Chemical ── */}
+                {/* â”€â”€ Chemical â”€â”€ */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 overflow-y-auto flex-shrink-0" style={{ width: "50%", paddingLeft: "12px", paddingRight: "4px" }}>
                   {[
-                    { label:"أمونيا", id:"nh3",   val:nh3,   set:setNh3,   unit:"ppm", color:"#a855f7", isFloat:true },
-                    { label:"CO₂",   id:"co2",   val:co2,   set:setCo2,   unit:"ppm", color:"#6366f1", isFloat:false },
-                    { label:"رطوبة", id:"hum",   val:hum,   set:setHum,   unit:"%",   color:"#3b82f6", isFloat:false },
-                    { label:"ضغط",   id:"press", val:press, set:setPress, unit:"Pa",  color:"#22c55e", isFloat:true  },
+                    { label:"Ø£Ù…ÙˆÙ†ÙŠØ§", id:"nh3",   val:nh3,   set:setNh3,   unit:"ppm", color:"#a855f7", isFloat:true },
+                    { label:"COâ‚‚",   id:"co2",   val:co2,   set:setCo2,   unit:"ppm", color:"#6366f1", isFloat:false },
+                    { label:"Ø±Ø·ÙˆØ¨Ø©", id:"hum",   val:hum,   set:setHum,   unit:"%",   color:"#3b82f6", isFloat:false },
+                    { label:"Ø¶ØºØ·",   id:"press", val:press, set:setPress, unit:"Pa",  color:"#22c55e", isFloat:true  },
                   ].map(({ label, id, val, set, unit, color, isFloat }) => (
                     <div key={id} style={{ background: val?`${color}10`:"var(--bg-tertiary)", border:`1px solid ${val?color:"var(--border)"}`, borderRadius:"8px", padding:"6px 4px", display: "flex", flexDirection: "column", justifyContent: "center", transition:"all .2s", minHeight: "60px" }}>
                       <div style={{ fontSize:".65rem", color:val?color:"var(--text-muted)", fontWeight:"800", marginBottom:"4px", textAlign: "center" }}>{label} <span style={{ opacity:.6 }}>({unit})</span></div>
@@ -600,7 +600,7 @@ export default function CasePage({ user }) {
                           : <IntInput       value={val} onChange={set} color={val?color:undefined} />}
                       </SpinBox>
                       {id==="hum" && age && rule?.lowRH && (
-                        <div style={{ marginTop:"5px",fontSize:".65rem",color:"var(--text-muted)", textAlign: "center" }}>مثالي: {rule.lowRH}%{rule.highRH?`–${rule.highRH}%`:""}</div>
+                        <div style={{ marginTop:"5px",fontSize:".65rem",color:"var(--text-muted)", textAlign: "center" }}>Ù…Ø«Ø§Ù„ÙŠ: {rule.lowRH}%{rule.highRH?`â€“${rule.highRH}%`:""}</div>
                       )}
                     </div>
                   ))}
@@ -611,17 +611,17 @@ export default function CasePage({ user }) {
           </div>
         </div>
 
-        {/* ══ RIGHT: COPY + PREVIEW + SUBMIT ══════════════════════════════════ */}
+        {/* â•â• RIGHT: COPY + PREVIEW + SUBMIT â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
         <div className="flex flex-col gap-4 lg:col-span-1 h-full overflow-hidden" style={{ minHeight: 0 }}>
 
           {/* Compact 3-button copy row */}
           <div style={card} className="flex flex-col">
-            <div className="font-bold text-sm text-muted mb-2">📤 الإجراءات (حفظ ونسخ)</div>
+            <div className="font-bold text-sm text-muted mb-2">ðŸ“¤ Ø§Ù„Ø¥Ø¬Ø±Ø§Ø¡Ø§Øª (Ø­ÙØ¸ ÙˆÙ†Ø³Ø®)</div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
               {[
-                { icon:"📱", line1:"واتساب", line2:"عربي",   fn:copyAr,    c:"#25D366", bg:"rgba(37,211,102," },
-                { icon:"📱", line1:"WhatsApp",line2:"EN",    fn:copyEn,    c:"#22c55e", bg:"rgba(34,197,94,"  },
-                { icon:"📋", line1:"Excel",  line2:"Row",    fn:copySheet, c:"#6366f1", bg:"rgba(99,102,241," },
+                { icon:"ðŸ“±", line1:"ÙˆØ§ØªØ³Ø§Ø¨", line2:"Ø¹Ø±Ø¨ÙŠ",   fn:copyAr,    c:"#25D366", bg:"rgba(37,211,102," },
+                { icon:"ðŸ“±", line1:"WhatsApp",line2:"EN",    fn:copyEn,    c:"#22c55e", bg:"rgba(34,197,94,"  },
+                { icon:"ðŸ“‹", line1:"Excel",  line2:"Row",    fn:copySheet, c:"#6366f1", bg:"rgba(99,102,241," },
               ].map(({ icon, line1, line2, fn, c, bg }) => (
                 <button key={line2} type="button" onClick={fn}
                   style={{ padding: "8px 4px", borderRadius: "8px", border: `1px solid ${c}50`, background: `${bg}.07)`,
@@ -638,9 +638,9 @@ export default function CasePage({ user }) {
 
           {/* WhatsApp Preview */}
           <div style={{ ...card, flex: 1, minHeight: 0, overflow: "hidden", background: "rgba(37,211,102,.04)", borderColor: "#25D36630" }}>
-            <div style={{ fontSize: ".68rem", color: "#25D366", fontWeight: "800", marginBottom: "5px" }}>📱 معاينة واتساب</div>
+            <div style={{ fontSize: ".68rem", color: "#25D366", fontWeight: "800", marginBottom: "5px" }}>ðŸ“± Ù…Ø¹Ø§ÙŠÙ†Ø© ÙˆØ§ØªØ³Ø§Ø¨</div>
             <pre style={{ fontFamily: "var(--font-ar)", fontSize: ".72rem", lineHeight: "1.7", color: "var(--text-secondary)", whiteSpace: "pre-wrap", margin: 0, overflow: "auto", height: "calc(100% - 22px)" }}>
-              {(farm||house) ? buildArabicText(live) : "أدخل البيانات لمعاينة الرسالة..."}
+              {(farm||house) ? buildArabicText(live) : "Ø£Ø¯Ø®Ù„ Ø§Ù„Ø¨ÙŠØ§Ù†Ø§Øª Ù„Ù…Ø¹Ø§ÙŠÙ†Ø© Ø§Ù„Ø±Ø³Ø§Ù„Ø©..."}
             </pre>
           </div>
 
@@ -652,7 +652,7 @@ export default function CasePage({ user }) {
         input[type=number]::-webkit-outer-spin-button,
         input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; }
         input[type=number] { -moz-appearance: textfield; }
-        /* ─ Responsive ──────────────────────────────────────────── */
+        /* â”€ Responsive â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
         @media (max-width: 900px) {
           .sensor-grid { grid-template-columns: 1fr 1fr !important; }
         }

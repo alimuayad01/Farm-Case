@@ -1,26 +1,26 @@
 import { useState, useEffect } from "react";
 import "./index.css";
 
-import { getCurrentUser } from "./core/auth.js";
-import LoginPage   from "./components/LoginPage.jsx";
-import Sidebar     from "./components/shared/Sidebar.jsx";
-import ToastContainer from "./components/shared/Toast.jsx";
+import { getCurrentUser } from "./services/auth.js";
+import LoginPage   from "./pages/auth/LoginPage.jsx";
+import Sidebar     from "./components/layout/Sidebar.jsx";
+import ToastContainer from "./components/ui/Toast.jsx";
 
-// ─── Pages ─────────────────────────────────────────────────────────────────
-import AdminDashboard from "./components/admin/AdminDashboard.jsx";
-import CasePage       from "./components/app/CasePage.jsx";
-import HistoryPage    from "./components/app/HistoryPage.jsx";
-import UsersPage      from "./components/admin/UsersPage.jsx";
-import MessagesPage      from "./components/admin/MessagesPage.jsx";
-import SettingsPage      from "./components/admin/SettingsPage.jsx";
-import PersonalSettingsPage from "./components/app/PersonalSettingsPage.jsx";
-import ProfilePage           from "./components/app/ProfilePage.jsx";
+// â”€â”€â”€ Pages â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+import AdminDashboard from "./pages/admin/AdminDashboard.jsx";
+import CasePage       from "./pages/app/CasePage.jsx";
+import HistoryPage    from "./pages/app/HistoryPage.jsx";
+import UsersPage      from "./pages/admin/UsersPage.jsx";
+import MessagesPage      from "./pages/admin/MessagesPage.jsx";
+import SettingsPage      from "./pages/admin/SettingsPage.jsx";
+import PersonalSettingsPage from "./pages/app/PersonalSettingsPage.jsx";
+import ProfilePage           from "./pages/app/ProfilePage.jsx";
 
 export default function App() {
   const [user,       setUser]       = useState(getCurrentUser);
   const [activePage, setActivePage] = useState(null);
 
-  // تحديد الصفحة الافتراضية بناءً على الدور
+  // ØªØ­Ø¯ÙŠØ¯ Ø§Ù„ØµÙØ­Ø© Ø§Ù„Ø§ÙØªØ±Ø§Ø¶ÙŠØ© Ø¨Ù†Ø§Ø¡Ù‹ Ø¹Ù„Ù‰ Ø§Ù„Ø¯ÙˆØ±
   useEffect(() => {
     if (!user) return;
     setActivePage(user.role === "admin" ? "dashboard" : "case");
@@ -29,7 +29,7 @@ export default function App() {
   function handleLogin(u) { setUser(u); }
   function handleLogout()  { setUser(null); setActivePage(null); }
 
-  // ─── غير مسجّل دخول ─────────────────────────────────────────────────────
+  // â”€â”€â”€ ØºÙŠØ± Ù…Ø³Ø¬Ù‘Ù„ Ø¯Ø®ÙˆÙ„ â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   if (!user) return (
     <>
       <LoginPage onLogin={handleLogin} />
@@ -37,7 +37,7 @@ export default function App() {
     </>
   );
 
-  // ─── Page Renderer ───────────────────────────────────────────────────────
+  // â”€â”€â”€ Page Renderer â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   function renderPage() {
     switch (activePage) {
       case "dashboard": return <AdminDashboard user={user} />;

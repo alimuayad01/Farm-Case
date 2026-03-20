@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { clearCurrentUser } from "../../core/auth.js";
+import { clearCurrentUser } from "../../services/auth.js";
 
 const AVATAR_KEY  = u => `avatar_${u}`;
 const loadAvatar  = u => localStorage.getItem(AVATAR_KEY(u)) || null;
@@ -27,14 +27,14 @@ export default function Sidebar({ user, activePage, onNavigate, onLogout }) {
   }, []);
 
   const navItems = [
-    ...(isAdmin ? [{ id: "dashboard",  icon: "📊", label: "نظرة عامة" }] : []),
-    { id: "case",       icon: "➕", label: "تسجيل حالة" },
-    { id: "history",    icon: "📋", label: "السجل" },
-    { id: "appearance", icon: "🎨", label: "المظهر" },
+    ...(isAdmin ? [{ id: "dashboard",  icon: "ðŸ“Š", label: "Ù†Ø¸Ø±Ø© Ø¹Ø§Ù…Ø©" }] : []),
+    { id: "case",       icon: "âž•", label: "ØªØ³Ø¬ÙŠÙ„ Ø­Ø§Ù„Ø©" },
+    { id: "history",    icon: "ðŸ“‹", label: "Ø§Ù„Ø³Ø¬Ù„" },
+    { id: "appearance", icon: "ðŸŽ¨", label: "Ø§Ù„Ù…Ø¸Ù‡Ø±" },
     ...(isAdmin ? [
-      { id: "users",    icon: "👥", label: "إدارة الموظفين" },
-      { id: "messages", icon: "📨", label: "التحذيرات والرسائل" },
-      { id: "settings", icon: "⚙️", label: "الإعدادات" },
+      { id: "users",    icon: "ðŸ‘¥", label: "Ø¥Ø¯Ø§Ø±Ø© Ø§Ù„Ù…ÙˆØ¸ÙÙŠÙ†" },
+      { id: "messages", icon: "ðŸ“¨", label: "Ø§Ù„ØªØ­Ø°ÙŠØ±Ø§Øª ÙˆØ§Ù„Ø±Ø³Ø§Ø¦Ù„" },
+      { id: "settings", icon: "âš™ï¸", label: "Ø§Ù„Ø¥Ø¹Ø¯Ø§Ø¯Ø§Øª" },
     ] : []),
   ];
 
@@ -46,14 +46,14 @@ export default function Sidebar({ user, activePage, onNavigate, onLogout }) {
     <nav className="sidebar">
       {/* Brand */}
       <div className="sidebar-brand">
-        <span className="sidebar-brand-icon">🏡</span>
+        <span className="sidebar-brand-icon">ðŸ¡</span>
         <div>
           <div className="sidebar-brand-title">Farm Case</div>
-          <div className="sidebar-brand-sub">{isAdmin ? "لوحة تحكم المدير" : "نظام المتابعة"}</div>
+          <div className="sidebar-brand-sub">{isAdmin ? "Ù„ÙˆØ­Ø© ØªØ­ÙƒÙ… Ø§Ù„Ù…Ø¯ÙŠØ±" : "Ù†Ø¸Ø§Ù… Ø§Ù„Ù…ØªØ§Ø¨Ø¹Ø©"}</div>
         </div>
       </div>
 
-      {/* ── Profile Avatar Button ─────────────────────────────────────────── */}
+      {/* â”€â”€ Profile Avatar Button â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       <div ref={menuRef} style={{ position: "relative", margin: "0 12px 8px", flexShrink: 0 }}>
         <button type="button" onClick={() => setMenuOpen(v => !v)}
           style={{ width: "100%", display: "flex", alignItems: "center", gap: "10px", padding: "10px 12px", borderRadius: "12px", border: "1px solid var(--border)", background: menuOpen ? "var(--bg-tertiary)" : "var(--bg-secondary)", cursor: "pointer", transition: "all .2s" }}
@@ -73,15 +73,15 @@ export default function Sidebar({ user, activePage, onNavigate, onLogout }) {
               {user?.name || user?.username}
             </div>
             <div style={{ fontSize: ".68rem", color: isAdmin ? "#f59e0b" : "#22c55e", fontWeight: "700" }}>
-              {isAdmin ? "🛡️ مدير" : "👷 موظف"}
+              {isAdmin ? "ðŸ›¡ï¸ Ù…Ø¯ÙŠØ±" : "ðŸ‘· Ù…ÙˆØ¸Ù"}
             </div>
           </div>
 
           {/* Chevron */}
-          <span style={{ color: "var(--text-muted)", fontSize: ".7rem", transition: "transform .2s", transform: menuOpen ? "rotate(180deg)" : "rotate(0deg)" }}>▲</span>
+          <span style={{ color: "var(--text-muted)", fontSize: ".7rem", transition: "transform .2s", transform: menuOpen ? "rotate(180deg)" : "rotate(0deg)" }}>â–²</span>
         </button>
 
-        {/* ── Dropdown Menu ─────────────────────────────────────────────────── */}
+        {/* â”€â”€ Dropdown Menu â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
         {menuOpen && (
           <div style={{ position: "absolute", bottom: "calc(100% + 6px)", left: 0, right: 0, background: "var(--bg-secondary)", border: "1px solid var(--border)", borderRadius: "12px", boxShadow: "var(--shadow-lg)", overflow: "hidden", zIndex: 50 }}>
             {/* Profile header */}
@@ -92,9 +92,9 @@ export default function Sidebar({ user, activePage, onNavigate, onLogout }) {
 
             {/* Menu items */}
             {[
-              { icon: "👤", label: "الملف الشخصي",   id: "profile" },
-              { icon: "🎨", label: "المظهر",         id: "appearance" },
-              ...(isAdmin ? [{ icon: "⚙️", label: "الإعدادات", id: "settings" }] : []),
+              { icon: "ðŸ‘¤", label: "Ø§Ù„Ù…Ù„Ù Ø§Ù„Ø´Ø®ØµÙŠ",   id: "profile" },
+              { icon: "ðŸŽ¨", label: "Ø§Ù„Ù…Ø¸Ù‡Ø±",         id: "appearance" },
+              ...(isAdmin ? [{ icon: "âš™ï¸", label: "Ø§Ù„Ø¥Ø¹Ø¯Ø§Ø¯Ø§Øª", id: "settings" }] : []),
             ].map(item => (
               <button key={item.id} type="button" onClick={() => { onNavigate(item.id); setMenuOpen(false); }}
                 style={{ width: "100%", display: "flex", alignItems: "center", gap: "10px", padding: "10px 14px", border: "none", background: "transparent", color: "var(--text-primary)", fontFamily: "var(--font-ar)", fontSize: ".82rem", fontWeight: "700", cursor: "pointer", textAlign: "right", borderBottom: "1px solid var(--border)", transition: "background .15s" }}
@@ -109,7 +109,7 @@ export default function Sidebar({ user, activePage, onNavigate, onLogout }) {
               style={{ width: "100%", display: "flex", alignItems: "center", gap: "10px", padding: "10px 14px", border: "none", background: "transparent", color: "#ef4444", fontFamily: "var(--font-ar)", fontSize: ".82rem", fontWeight: "700", cursor: "pointer", textAlign: "right", transition: "background .15s" }}
               onMouseEnter={e => e.currentTarget.style.background = "rgba(239,68,68,.08)"}
               onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
-              <span>🚪</span><span>تسجيل الخروج</span>
+              <span>ðŸšª</span><span>ØªØ³Ø¬ÙŠÙ„ Ø§Ù„Ø®Ø±ÙˆØ¬</span>
             </button>
           </div>
         )}

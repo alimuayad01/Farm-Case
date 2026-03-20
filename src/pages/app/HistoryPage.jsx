@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
-import { loadData, saveData } from "../../core/firebase.js";
-import { isToday } from "../../core/utils.js";
-import { buildArabicText, buildEnglishText, getSheetRows } from "../../core/conditions.js";
-import { showToast } from "../shared/Toast.jsx";
+import { loadData, saveData } from "../../services/firebase.js";
+import { isToday } from "../../utils/utils.js";
+import { buildArabicText, buildEnglishText, getSheetRows } from "../../utils/conditions.js";
+import { showToast } from "../../components/ui/Toast.jsx";
 
-// ─── Case Detail Modal ────────────────────────────────────────────────────────
+// â”€â”€â”€ Case Detail Modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function CaseModal({ c, user, onClose, onDelete }) {
   const r = c?.raw_data || {};
   const sensors = (r.sensors || []).filter(s => s.val);
@@ -16,9 +16,9 @@ function CaseModal({ c, user, onClose, onDelete }) {
 
   function copySheet() {
     const rows = getSheetRows(c);
-    if (!rows.length) { showToast("لا بيانات", "error"); return; }
+    if (!rows.length) { showToast("Ù„Ø§ Ø¨ÙŠØ§Ù†Ø§Øª", "error"); return; }
     navigator.clipboard.writeText(rows.map(r => r.join("\t")).join("\n"));
-    showToast("📋 تم نسخ سطر الشيت", "success");
+    showToast("ðŸ“‹ ØªÙ… Ù†Ø³Ø® Ø³Ø·Ø± Ø§Ù„Ø´ÙŠØª", "success");
   }
 
   return (
@@ -28,12 +28,12 @@ function CaseModal({ c, user, onClose, onDelete }) {
         {/* Header */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
           <div>
-            <h2 style={{ fontWeight: "900", fontSize: "1.1rem", margin: 0 }}>📋 تفاصيل الحالة</h2>
+            <h2 style={{ fontWeight: "900", fontSize: "1.1rem", margin: 0 }}>ðŸ“‹ ØªÙØ§ØµÙŠÙ„ Ø§Ù„Ø­Ø§Ù„Ø©</h2>
             <div style={{ fontSize: ".75rem", color: "var(--text-muted)", marginTop: "2px" }}>
-              {c.date} — {c.shift || ""} — 👤 {c.by_user}
+              {c.date} â€” {c.shift || ""} â€” ðŸ‘¤ {c.by_user}
             </div>
           </div>
-          <button className="btn btn-ghost btn-sm" onClick={onClose}>✖</button>
+          <button className="btn btn-ghost btn-sm" onClick={onClose}>âœ–</button>
         </div>
 
         {/* Condition Banner */}
@@ -44,33 +44,33 @@ function CaseModal({ c, user, onClose, onDelete }) {
         }}>
           <div>
             <div style={{ fontWeight: "800", color: rateColor, fontSize: ".95rem" }}>
-              {r.condition || "—"} {r.special ? `(${r.special})` : ""}
+              {r.condition || "â€”"} {r.special ? `(${r.special})` : ""}
             </div>
             <div style={{ fontSize: ".75rem", color: "var(--text-muted)", marginTop: "2px" }}>
-              {c.time} → {r.duration ? `مدة: ${r.duration}` : "مدة غير مسجلة"}
+              {c.time} â†’ {r.duration ? `Ù…Ø¯Ø©: ${r.duration}` : "Ù…Ø¯Ø© ØºÙŠØ± Ù…Ø³Ø¬Ù„Ø©"}
             </div>
           </div>
           <div style={{ textAlign: "left" }}>
             <div style={{ fontSize: "1.5rem", fontWeight: "900", color: rateColor, fontFamily: "monospace, Arial" }}>
-              {!isNaN(rateN) ? `${rateN > 0 ? "+" : ""}${r.rate}°` : "—"}
+              {!isNaN(rateN) ? `${rateN > 0 ? "+" : ""}${r.rate}Â°` : "â€”"}
             </div>
-            {avgN !== null && <div style={{ fontSize: ".72rem", color: "var(--text-muted)" }}>متوسط: {avgN.toFixed(2)}°</div>}
+            {avgN !== null && <div style={{ fontSize: ".72rem", color: "var(--text-muted)" }}>Ù…ØªÙˆØ³Ø·: {avgN.toFixed(2)}Â°</div>}
           </div>
         </div>
 
         {/* Info Grid */}
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px", marginBottom: "12px" }}>
           {[
-            ["🏡 المزرعة", c.farm],
-            ["🏠 الحظيرة", c.house],
-            ["🐔 العمر", r.age ? `${r.age} يوم` : "—"],
-            ["🏭 النوع", r.f_type || "—"],
-            ["🌡️ السيت بوينت", r.set_point ? `${r.set_point}°` : "—"],
-            ["📊 الشفت", c.shift || "—"],
+            ["ðŸ¡ Ø§Ù„Ù…Ø²Ø±Ø¹Ø©", c.farm],
+            ["ðŸ  Ø§Ù„Ø­Ø¸ÙŠØ±Ø©", c.house],
+            ["ðŸ” Ø§Ù„Ø¹Ù…Ø±", r.age ? `${r.age} ÙŠÙˆÙ…` : "â€”"],
+            ["ðŸ­ Ø§Ù„Ù†ÙˆØ¹", r.f_type || "â€”"],
+            ["ðŸŒ¡ï¸ Ø§Ù„Ø³ÙŠØª Ø¨ÙˆÙŠÙ†Øª", r.set_point ? `${r.set_point}Â°` : "â€”"],
+            ["ðŸ“Š Ø§Ù„Ø´ÙØª", c.shift || "â€”"],
           ].map(([k, v]) => (
             <div key={k} style={{ background: "var(--bg-tertiary)", borderRadius: "8px", padding: "9px 12px" }}>
               <div style={{ fontSize: ".68rem", color: "var(--text-muted)", fontWeight: "700" }}>{k}</div>
-              <div style={{ fontWeight: "800", marginTop: "2px", fontSize: ".9rem" }}>{v || "—"}</div>
+              <div style={{ fontWeight: "800", marginTop: "2px", fontSize: ".9rem" }}>{v || "â€”"}</div>
             </div>
           ))}
         </div>
@@ -78,11 +78,11 @@ function CaseModal({ c, user, onClose, onDelete }) {
         {/* Sensors */}
         {sensors.length > 0 && (
           <div style={{ marginBottom: "10px" }}>
-            <div style={{ fontSize: ".7rem", color: "var(--text-muted)", fontWeight: "700", marginBottom: "5px" }}>قراءات الحساسات</div>
+            <div style={{ fontSize: ".7rem", color: "var(--text-muted)", fontWeight: "700", marginBottom: "5px" }}>Ù‚Ø±Ø§Ø¡Ø§Øª Ø§Ù„Ø­Ø³Ø§Ø³Ø§Øª</div>
             <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
               {sensors.map((s, i) => (
                 <span key={i} style={{ background: "var(--bg-tertiary)", border: "1px solid var(--border)", borderRadius: "7px", padding: "4px 12px", fontSize: ".82rem", fontWeight: "700", fontFamily: "monospace, Arial" }}>
-                  T{i + 1}: {s.val}°
+                  T{i + 1}: {s.val}Â°
                 </span>
               ))}
             </div>
@@ -92,7 +92,7 @@ function CaseModal({ c, user, onClose, onDelete }) {
         {/* Chem values */}
         {isChem && (
           <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", marginBottom: "10px" }}>
-            {[["NH3", r.nh3, "ppm", "#a855f7"], ["CO2", r.co2, "ppm", "#6366f1"], ["رطوبة", r.hum, "%", "#3b82f6"], ["ضغط", r.press, "Pa", "#22c55e"]].filter(([, v]) => v).map(([k, v, u, color]) => (
+            {[["NH3", r.nh3, "ppm", "#a855f7"], ["CO2", r.co2, "ppm", "#6366f1"], ["Ø±Ø·ÙˆØ¨Ø©", r.hum, "%", "#3b82f6"], ["Ø¶ØºØ·", r.press, "Pa", "#22c55e"]].filter(([, v]) => v).map(([k, v, u, color]) => (
               <span key={k} style={{ background: `${color}15`, border: `1px solid ${color}`, borderRadius: "7px", padding: "4px 12px", fontSize: ".82rem", fontWeight: "700", color }}>
                 {k}: {v} {u}
               </span>
@@ -104,16 +104,16 @@ function CaseModal({ c, user, onClose, onDelete }) {
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "8px", marginTop: "14px" }}>
           <button className="btn btn-sm"
             style={{ background: "#25D366", color: "#fff", justifyContent: "center", padding: "10px" }}
-            onClick={() => { navigator.clipboard.writeText(buildArabicText(c)); showToast("📱 نُسخ عربي", "success"); }}>
-            📱 واتساب عربي
+            onClick={() => { navigator.clipboard.writeText(buildArabicText(c)); showToast("ðŸ“± Ù†ÙØ³Ø® Ø¹Ø±Ø¨ÙŠ", "success"); }}>
+            ðŸ“± ÙˆØ§ØªØ³Ø§Ø¨ Ø¹Ø±Ø¨ÙŠ
           </button>
           <button className="btn btn-sm"
             style={{ background: "#22c55e", color: "#fff", justifyContent: "center", padding: "10px" }}
-            onClick={() => { navigator.clipboard.writeText(buildEnglishText(c)); showToast("📱 Copied EN", "success"); }}>
-            📱 English
+            onClick={() => { navigator.clipboard.writeText(buildEnglishText(c)); showToast("ðŸ“± Copied EN", "success"); }}>
+            ðŸ“± English
           </button>
           <button className="btn btn-ghost btn-sm" style={{ justifyContent: "center", padding: "10px" }} onClick={copySheet}>
-            📋 Excel Row
+            ðŸ“‹ Excel Row
           </button>
         </div>
 
@@ -121,8 +121,8 @@ function CaseModal({ c, user, onClose, onDelete }) {
         {canDelete && (
           <button className="btn btn-sm"
             style={{ marginTop: "10px", width: "100%", background: "rgba(239,68,68,.1)", color: "#ef4444", border: "1px solid rgba(239,68,68,.3)", justifyContent: "center", padding: "10px" }}
-            onClick={() => { if (window.confirm("هل أنت متأكد من حذف هذه الحالة؟")) onDelete(c); }}>
-            🗑️ حذف الحالة {user?.role !== "admin" ? "(سيُرسل إشعار للمدير)" : ""}
+            onClick={() => { if (window.confirm("Ù‡Ù„ Ø£Ù†Øª Ù…ØªØ£ÙƒØ¯ Ù…Ù† Ø­Ø°Ù Ù‡Ø°Ù‡ Ø§Ù„Ø­Ø§Ù„Ø©ØŸ")) onDelete(c); }}>
+            ðŸ—‘ï¸ Ø­Ø°Ù Ø§Ù„Ø­Ø§Ù„Ø© {user?.role !== "admin" ? "(Ø³ÙŠÙØ±Ø³Ù„ Ø¥Ø´Ø¹Ø§Ø± Ù„Ù„Ù…Ø¯ÙŠØ±)" : ""}
           </button>
         )}
       </div>
@@ -130,15 +130,15 @@ function CaseModal({ c, user, onClose, onDelete }) {
   );
 }
 
-// ─── Main HistoryPage ─────────────────────────────────────────────────────────
-const DATE_OPTS = ["اليوم", "أمس", "آخر 7 أيام", "كل الأيام"];
+// â”€â”€â”€ Main HistoryPage â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+const DATE_OPTS = ["Ø§Ù„ÙŠÙˆÙ…", "Ø£Ù…Ø³", "Ø¢Ø®Ø± 7 Ø£ÙŠØ§Ù…", "ÙƒÙ„ Ø§Ù„Ø£ÙŠØ§Ù…"];
 
 export default function HistoryPage({ user }) {
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [detail,  setDetail]  = useState(null);
   const [search,  setSearch]  = useState("");
-  const [dateFilter, setDateFilter] = useState("اليوم");
+  const [dateFilter, setDateFilter] = useState("Ø§Ù„ÙŠÙˆÙ…");
 
   useEffect(() => {
     loadData("history", []).then(d => { setHistory(d); setLoading(false); });
@@ -153,9 +153,9 @@ export default function HistoryPage({ user }) {
 
   const filtered = [...history].reverse().filter(h => {
     const ts = h.timestamp || 0;
-    if (dateFilter === "اليوم"      && ts < todayTs)                        return false;
-    if (dateFilter === "أمس"        && (ts < yesterdayTs || ts >= todayTs)) return false;
-    if (dateFilter === "آخر 7 أيام" && ts < sevenDaysTs)                   return false;
+    if (dateFilter === "Ø§Ù„ÙŠÙˆÙ…"      && ts < todayTs)                        return false;
+    if (dateFilter === "Ø£Ù…Ø³"        && (ts < yesterdayTs || ts >= todayTs)) return false;
+    if (dateFilter === "Ø¢Ø®Ø± 7 Ø£ÙŠØ§Ù…" && ts < sevenDaysTs)                   return false;
     if (search.trim()) {
       const q = search.toLowerCase();
       return h.farm?.toLowerCase().includes(q) || h.house?.includes(q) || h.by_user?.toLowerCase().includes(q) || h.raw_data?.condition?.includes(q);
@@ -179,7 +179,7 @@ export default function HistoryPage({ user }) {
     await saveData("history", updated);
     setHistory(updated);
     setDetail(null);
-    showToast(isAdmin ? "🗑️ تم الحذف" : "🗑️ تم الحذف — أُرسل إشعار للمدير", "success");
+    showToast(isAdmin ? "ðŸ—‘ï¸ ØªÙ… Ø§Ù„Ø­Ø°Ù" : "ðŸ—‘ï¸ ØªÙ… Ø§Ù„Ø­Ø°Ù â€” Ø£ÙØ±Ø³Ù„ Ø¥Ø´Ø¹Ø§Ø± Ù„Ù„Ù…Ø¯ÙŠØ±", "success");
   }
 
   return (
@@ -188,14 +188,14 @@ export default function HistoryPage({ user }) {
       {/* Header */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexShrink: 0 }}>
         <div>
-          <div style={{ fontWeight: "900", fontSize: "1.05rem" }}>📋 السجل التاريخي</div>
-          <div style={{ fontSize: ".78rem", color: "var(--text-muted)" }}>{filtered.length} حالة</div>
+          <div style={{ fontWeight: "900", fontSize: "1.05rem" }}>ðŸ“‹ Ø§Ù„Ø³Ø¬Ù„ Ø§Ù„ØªØ§Ø±ÙŠØ®ÙŠ</div>
+          <div style={{ fontSize: ".78rem", color: "var(--text-muted)" }}>{filtered.length} Ø­Ø§Ù„Ø©</div>
         </div>
       </div>
 
       {/* Filters */}
       <div style={{ background: "var(--bg-secondary)", border: "1px solid var(--border)", borderRadius: "var(--radius-md)", padding: "10px 14px", display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap", flexShrink: 0 }}>
-        <input className="form-input" placeholder="🔍 بحث بالمزرعة أو الحظيرة..."
+        <input className="form-input" placeholder="ðŸ” Ø¨Ø­Ø« Ø¨Ø§Ù„Ù…Ø²Ø±Ø¹Ø© Ø£Ùˆ Ø§Ù„Ø­Ø¸ÙŠØ±Ø©..."
           value={search} onChange={e => setSearch(e.target.value)}
           style={{ flex: 1, border: "none", background: "transparent", padding: 0, minWidth: "150px" }} />
         <div style={{ display: "flex", gap: "5px" }}>
@@ -212,13 +212,13 @@ export default function HistoryPage({ user }) {
       <div style={{ flex: 1, minHeight: 0, overflowY: "auto" }}>
         <div className="card table-card" style={{ margin: 0 }}>
           <div className="table-header-row" style={{ gridTemplateColumns: "90px 1fr 80px 60px 100px 80px" }}>
-            <span>الوقت</span><span>الحالة والمعدل</span><span>المزرعة</span><span>حظيرة</span><span>الموظف</span><span>الحالة</span>
+            <span>Ø§Ù„ÙˆÙ‚Øª</span><span>Ø§Ù„Ø­Ø§Ù„Ø© ÙˆØ§Ù„Ù…Ø¹Ø¯Ù„</span><span>Ø§Ù„Ù…Ø²Ø±Ø¹Ø©</span><span>Ø­Ø¸ÙŠØ±Ø©</span><span>Ø§Ù„Ù…ÙˆØ¸Ù</span><span>Ø§Ù„Ø­Ø§Ù„Ø©</span>
           </div>
 
           {loading ? (
-            <div className="empty-state"><span className="empty-state-icon">⏳</span><div>جاري التحميل...</div></div>
+            <div className="empty-state"><span className="empty-state-icon">â³</span><div>Ø¬Ø§Ø±ÙŠ Ø§Ù„ØªØ­Ù…ÙŠÙ„...</div></div>
           ) : filtered.length === 0 ? (
-            <div className="empty-state"><span className="empty-state-icon">📭</span><div className="empty-state-title">لا توجد حالات{search && " في البحث"}</div></div>
+            <div className="empty-state"><span className="empty-state-icon">ðŸ“­</span><div className="empty-state-title">Ù„Ø§ ØªÙˆØ¬Ø¯ Ø­Ø§Ù„Ø§Øª{search && " ÙÙŠ Ø§Ù„Ø¨Ø­Ø«"}</div></div>
           ) : (
             filtered.map((c, i) => {
               const r = c.raw_data || {};
@@ -228,15 +228,15 @@ export default function HistoryPage({ user }) {
                 <div key={i} className="table-row"
                   style={{ gridTemplateColumns: "90px 1fr 80px 60px 100px 80px", cursor: "pointer" }}
                   onClick={() => setDetail(c)}>
-                  <span className="text-muted" style={{ fontSize: ".78rem" }}>{c.time || "—"}</span>
+                  <span className="text-muted" style={{ fontSize: ".78rem" }}>{c.time || "â€”"}</span>
                   <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                    <span style={{ fontWeight: "800" }}>{r.condition || "—"}{r.special ? ` (${r.special})` : ""}</span>
-                    {!isNaN(rateNum) && <span style={{ fontSize: ".72rem", color: rateColor, fontFamily: "monospace, Arial", fontWeight: "700" }}>({rateNum > 0 ? "+" : ""}{r.rate}°)</span>}
+                    <span style={{ fontWeight: "800" }}>{r.condition || "â€”"}{r.special ? ` (${r.special})` : ""}</span>
+                    {!isNaN(rateNum) && <span style={{ fontSize: ".72rem", color: rateColor, fontFamily: "monospace, Arial", fontWeight: "700" }}>({rateNum > 0 ? "+" : ""}{r.rate}Â°)</span>}
                   </div>
-                  <span style={{ fontFamily: "monospace, Arial", fontWeight: "700" }}>{c.farm || "—"}</span>
-                  <span style={{ fontFamily: "monospace, Arial" }}>{c.house || "—"}</span>
-                  <span style={{ color: "var(--accent-blue)", fontSize: ".82rem" }}>{c.by_user || "—"}</span>
-                  <span>{c.seen ? <span className="badge badge-green">✓ راجعت</span> : <span className="badge badge-red">جديدة</span>}</span>
+                  <span style={{ fontFamily: "monospace, Arial", fontWeight: "700" }}>{c.farm || "â€”"}</span>
+                  <span style={{ fontFamily: "monospace, Arial" }}>{c.house || "â€”"}</span>
+                  <span style={{ color: "var(--accent-blue)", fontSize: ".82rem" }}>{c.by_user || "â€”"}</span>
+                  <span>{c.seen ? <span className="badge badge-green">âœ“ Ø±Ø§Ø¬Ø¹Øª</span> : <span className="badge badge-red">Ø¬Ø¯ÙŠØ¯Ø©</span>}</span>
                 </div>
               );
             })
