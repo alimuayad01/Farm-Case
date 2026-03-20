@@ -1,0 +1,665 @@
+import { useState, useEffect, useRef, useCallback } from "react";
+import { loadData, saveData } from "../../core/firebase.js";
+import { getShiftName, nowTimestamp } from "../../core/utils.js";
+import { showToast } from "../shared/Toast.jsx";
+import { detectCondition, buildArabicText, buildEnglishText, getSheetRows } from "../../core/conditions.js";
+
+const HOUSES = Array.from({ length: 16 }, (_, i) => String(i + 1));
+const AGES   = Array.from({ length: 35 }, (_, i) => String(i + 1));
+const OKEY   = "farmcase_offline_queue";
+
+const sf  = v => { const n = parseFloat(v); return isNaN(n) ? null : n; };
+const fv  = v => { const n = sf(v); if (n === null) return ""; return n % 1 === 0 ? String(n) : n.toFixed(2).replace(/\.?0+$/, ""); };
+const avg = arr => { const n = arr.map(v => sf(typeof v === "object" ? v.val : v)).filter(x => x !== null); return n.length ? n.reduce((a, b) => a + b, 0) / n.length : null; };
+const getQ   = () => JSON.parse(localStorage.getItem(OKEY) || "[]");
+const addQ   = c => { const q = getQ(); q.push(c); localStorage.setItem(OKEY, JSON.stringify(q)); };
+const clearQ = () => localStorage.removeItem(OKEY);
+
+/* ─── SmartTempInput ──────────────────────────────────────────────────────────
+   Keyboard-controlled. After 2 integer digits, auto-inserts "." and waits for
+   one decimal digit. Format: [-]XX.X  (max). Arrow keys & scroll wheel work. */
+function SmartTempInput({ value, onChange, step = 0.1, placeholder = "——.—", color, disabled }) {
+  const ref = useRef();
+  const str = String(value ?? "");
+  const isNeg  = str.startsWith("-");
+  const body   = isNeg ? str.slice(1) : str;
+  const hasDot = body.includes(".");
+  const intPt  = body.split(".")[0];
+  const decPt  = hasDot ? body.split(".")[1] : "";
+
+  // Keep caret at end while focused
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || el !== document.activeElement) return;
+    requestAnimationFrame(() => { try { el.setSelectionRange(str.length, str.length); } catch {} });
+  }, [str]);
+
+  function handleKeyDown(e) {
+    if (["Tab", "Enter", "Shift"].includes(e.key)) return;
+    if (e.key === "ArrowUp")   { e.preventDefault(); onChange(fv((sf(value) ?? 0) + step)); return; }
+    if (e.key === "ArrowDown") { e.preventDefault(); onChange(fv((sf(value) ?? 0) - step)); return; }
+    if (e.key === "Escape" || e.key === "Delete") { e.preventDefault(); onChange(""); return; }
+    if (e.key === "-" && !str) { e.preventDefault(); onChange("-"); return; }
+    if (e.key === "Backspace") {
+      e.preventDefault();
+      if (hasDot && decPt === "")     onChange((isNeg ? "-" : "") + intPt);
+      else if (hasDot)                onChange((isNeg ? "-" : "") + intPt + "." + decPt.slice(0, -1));
+      else if (intPt.length > 0)      onChange((isNeg ? "-" : "") + intPt.slice(0, -1));
+      else if (isNeg)                 onChange("");
+      return;
+    }
+    if (e.key === "." && !hasDot && intPt.length > 0) {
+      e.preventDefault(); onChange((isNeg ? "-" : "") + intPt + "."); return;
+    }
+    if (!/^[0-9]$/.test(e.key)) { e.preventDefault(); return; }
+    e.preventDefault();
+    if (!hasDot) {
+      if (intPt.length >= 2) onChange((isNeg ? "-" : "") + intPt + "." + e.key); // auto-decimal
+      else                   onChange((isNeg ? "-" : "") + intPt + e.key);
+    } else {
+      if (decPt.length < 1)  onChange((isNeg ? "-" : "") + intPt + "." + decPt + e.key);
+    }
+  }
+
+  useEffect(() => {
+    const el = ref.current; if (!el) return;
+    const wh = e => { e.preventDefault(); onChange(fv((sf(value) ?? 0) + (e.deltaY < 0 ? step : -step))); };
+    el.addEventListener("wheel", wh, { passive: false });
+    return () => el.removeEventListener("wheel", wh);
+  }, [value, step]);
+
+  return (
+    <input ref={ref} type="text" inputMode="numeric"
+      value={str} onKeyDown={handleKeyDown} onChange={() => {}}
+      placeholder={placeholder} disabled={disabled}
+      style={{ flex: 1, height: "100%", border: "none", background: "transparent",
+        color: disabled ? "var(--text-muted)" : (color || "var(--text-primary)"),
+        fontFamily: "monospace, Arial", fontSize: "1rem", fontWeight: "800",
+        textAlign: "center", outline: "none", cursor: "text", caretColor: "var(--accent-blue)", minWidth: 0 }} />
+  );
+}
+
+/* ─── IntInput ──────────────────────────────────────────────────────────────── */
+function IntInput({ value, onChange, placeholder = "——", step = 1, color }) {
+  const ref = useRef();
+  const str = String(value ?? "");
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || el !== document.activeElement) return;
+    requestAnimationFrame(() => { try { el.setSelectionRange(str.length, str.length); } catch {} });
+  }, [str]);
+  function handleKeyDown(e) {
+    if (["Tab", "Enter", "Shift"].includes(e.key)) return;
+    if (e.key === "ArrowUp")   { e.preventDefault(); onChange(String((parseInt(value) || 0) + step)); return; }
+    if (e.key === "ArrowDown") { e.preventDefault(); onChange(String(Math.max(0, (parseInt(value) || 0) - step))); return; }
+    if (e.key === "Escape" || e.key === "Delete") { e.preventDefault(); onChange(""); return; }
+    if (e.key === "Backspace") { e.preventDefault(); onChange(str.slice(0, -1)); return; }
+    if (!/^[0-9]$/.test(e.key)) { e.preventDefault(); return; }
+    e.preventDefault(); if (str.length < 5) onChange(str + e.key);
+  }
+  useEffect(() => {
+    const el = ref.current; if (!el) return;
+    const wh = e => { e.preventDefault(); onChange(String(Math.max(0, (parseInt(value) || 0) + (e.deltaY < 0 ? step : -step)))); };
+    el.addEventListener("wheel", wh, { passive: false });
+    return () => el.removeEventListener("wheel", wh);
+  }, [value, step]);
+  return (
+    <input ref={ref} type="text" inputMode="numeric"
+      value={str} onKeyDown={handleKeyDown} onChange={() => {}}
+      placeholder={placeholder}
+      style={{ flex: 1, height: "100%", border: "none", background: "transparent",
+        color: color || "var(--text-primary)", fontFamily: "monospace, Arial",
+        fontSize: "1rem", fontWeight: "800", textAlign: "center",
+        outline: "none", cursor: "text", caretColor: "var(--accent-blue)", minWidth: 0 }} />
+  );
+}
+
+/* ─── SpinBox ────────────────────────────────────────────────────────────────── */
+function SpinBox({ children, color, onMinus, onPlus, suffix }) {
+  const [hov, setHov] = useState(false);
+  return (
+    <div className="focus-ring" onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
+      style={{ display: "flex", alignItems: "center", background: "var(--bg-tertiary)",
+        border: `1px solid ${color || "var(--border)"}`, borderRadius: "8px", height: "36px", transition: "border-color .2s" }}>
+      <button type="button" onClick={onMinus}
+        style={{ width: "24px", height: "100%", background: hov ? "rgba(0,0,0,.12)" : "transparent", border: "none",
+          color: hov ? "var(--text-primary)" : "transparent", cursor: "pointer", flexShrink: 0,
+          fontSize: ".85rem", fontWeight: "900", borderRadius: "7px 0 0 7px", transition: "all .18s" }}>−</button>
+      {children}
+      {suffix && <span style={{ color: "var(--text-muted)", fontSize: ".62rem", paddingLeft: "1px", flexShrink: 0 }}>{suffix}</span>}
+      <button type="button" onClick={onPlus}
+        style={{ width: "24px", height: "100%", background: hov ? "rgba(0,0,0,.12)" : "transparent", border: "none",
+          color: hov ? "var(--text-primary)" : "transparent", cursor: "pointer", flexShrink: 0,
+          fontSize: ".85rem", fontWeight: "900", borderRadius: "0 7px 7px 0", transition: "all .18s" }}>+</button>
+    </div>
+  );
+}
+
+/* ─── SmartTimeInput ─────────────────────────────────────────────────────────── */
+function SmartTimeInput({ label, h, m, p, onChange }) {
+  const hRef = useRef(); const mRef = useRef(); const pickerRef = useRef();
+  useEffect(() => { if (hRef.current) hRef.current.value = h || ""; }, [h]);
+  useEffect(() => { if (mRef.current) mRef.current.value = m || ""; }, [m]);
+  const fire = useCallback(() => {
+    onChange({ h: hRef.current?.value || "", m: mRef.current?.value || "", p });
+  }, [onChange, p]);
+
+  function validateHour() {
+    const v = parseInt(hRef.current?.value);
+    if (isNaN(v) || hRef.current?.value === "") { fire(); return; }
+    if (v > 12) {
+      showToast("⚠️ نظام 12 ساعة | الساعة لا تتجاوز 12", "error");
+      hRef.current.value = "12"; fire(); return;
+    }
+    if (v < 1) { hRef.current.value = "01"; fire(); return; }
+    hRef.current.value = String(v).padStart(2, "0"); fire();
+  }
+
+  function validateMin() {
+    const v = parseInt(mRef.current?.value);
+    if (isNaN(v) || mRef.current?.value === "") { fire(); return; }
+    const clamped = Math.max(0, Math.min(59, v));
+    mRef.current.value = String(clamped).padStart(2, "0"); fire();
+  }
+  useEffect(() => {
+    const he = hRef.current, me = mRef.current; if (!he || !me) return;
+    const wH = e => { e.preventDefault(); const v = parseInt(he.value) || 0; he.value = String(((v - 1 + 12) % 12) + 1).padStart(2, "0"); fire(); };
+    const wM = e => { e.preventDefault(); const v = parseInt(me.value) || 0; me.value = String((v + (e.deltaY < 0 ? 1 : -1) + 60) % 60).padStart(2, "0"); fire(); };
+    he.addEventListener("wheel", wH, { passive: false }); me.addEventListener("wheel", wM, { passive: false });
+    return () => { he.removeEventListener("wheel", wH); me.removeEventListener("wheel", wM); };
+  }, [fire]);
+  return (
+    <div style={{ flex: 1 }}>
+      <div style={{ fontSize: ".7rem", color: "var(--text-muted)", fontWeight: "800", marginBottom: "4px" }}>{label}</div>
+      <div className="flex items-center gap-2">
+
+        {/* Main time field */}
+        <div className="focus-ring" style={{ flex: 1, position: "relative", display: "flex", alignItems: "center", background: "var(--bg-tertiary)", border: "1px solid var(--border)", borderRadius: "8px", height: "36px", padding: "0 6px", gap: "2px" }}>
+
+          <input ref={hRef} type="number" min="1" max="12" placeholder="--" defaultValue={h}
+            onChange={fire} onBlur={validateHour}
+            style={{ width: "24px", background: "transparent", border: "none", color: "var(--text-primary)", fontFamily: "Arial", fontSize: ".9rem", fontWeight: "800", textAlign: "center", outline: "none", lineHeight: "36px", caretColor: "var(--accent-blue)" }} />
+
+          {/* Colon — perfectly centered */}
+          <span style={{ color: "var(--text-muted)", fontWeight: "900", fontSize: "1.1rem", lineHeight: "1", alignSelf: "center", marginBottom: "2px", userSelect: "none" }}>:</span>
+
+          <input ref={mRef} type="number" min="0" max="59" placeholder="--" defaultValue={m}
+            onChange={fire} onBlur={validateMin}
+            style={{ width: "24px", background: "transparent", border: "none", color: "var(--text-primary)", fontFamily: "Arial", fontSize: ".9rem", fontWeight: "800", textAlign: "center", outline: "none", lineHeight: "36px", caretColor: "var(--accent-blue)" }} />
+
+          {/* Spacer */}
+          <div style={{ flex: 1 }} />
+
+          {/* Clock icon */}
+          <button type="button" title="اختر الوقت" onClick={() => { try { pickerRef.current?.showPicker(); } catch {} }}
+            style={{ width: "26px", height: "26px", background: "transparent", border: "none", cursor: "pointer", color: "var(--text-muted)", fontSize: ".9rem", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "5px", transition: "all .15s" }}
+            onMouseEnter={e => { e.currentTarget.style.background = "var(--bg-secondary)"; e.currentTarget.style.color = "var(--accent-blue)"; }}
+            onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--text-muted)"; }}>
+            🕒
+          </button>
+
+          {/* Hidden native time input — positioned so picker appears just below this field */}
+          <input ref={pickerRef} type="time" tabIndex={-1}
+            style={{ position: "absolute", top: "100%", right: "0", width: "1px", height: "1px", opacity: 0, pointerEvents: "none", border: "none", padding: 0 }}
+            onChange={(e) => {
+              if (!e.target.value) return;
+              const [hh, mm] = e.target.value.split(":");
+              let vH = parseInt(hh); const nP = vH >= 12 ? "PM" : "AM";
+              vH = vH % 12 || 12;
+              onChange({ h: String(vH).padStart(2, "0"), m: mm, p: nP });
+            }} />
+        </div>
+
+        {/* AM/PM toggle */}
+        <button type="button" onClick={() => onChange({ h: hRef.current?.value || "", m: mRef.current?.value || "", p: p === "AM" ? "PM" : "AM" })}
+          style={{ width: "40px", height: "36px", borderRadius: "8px", border: "none", background: p === "PM" ? "rgba(239,68,68,.15)" : "rgba(37,99,235,.15)", color: p === "PM" ? "#ef4444" : "#3b82f6", fontWeight: "900", fontSize: ".78rem", cursor: "pointer", transition: "all .2s", flexShrink: 0 }}>
+          {p}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* ══════════════════════════ MAIN PAGE ══════════════════════════════════════════ */
+export default function CasePage({ user }) {
+  const [farm, setFarm]             = useState("");
+  const [house, setHouse]           = useState("");
+  const [age, setAge]               = useState("");
+  const [sp, setSp]                 = useState("");
+  const [rate, setRate]             = useState("");
+  const [startTime, setStartTime]   = useState({ h: "", m: "", p: "AM" });
+  const [endTime, setEndTime]       = useState({ h: "", m: "", p: "AM" });
+  const [sMode, setSMode]           = useState("chem");
+  const [sensors, setSensors]       = useState(["", "", "", "", "", ""]);
+  const [nh3, setNh3]   = useState(""); const [co2, setCo2] = useState("");
+  const [hum, setHum]   = useState(""); const [press, setPress] = useState("");
+  const [specialCond, setSpecialCond] = useState(null);
+  const [otherConds, setOtherConds]   = useState([]);
+  const [history, setHistory]         = useState([]);
+  const [savedFarms, setSavedFarms]   = useState([]);
+  const [saving, setSaving]           = useState(false);
+  const [lastCase, setLastCase]       = useState(null);
+  const [farmSugg, setFarmSugg]       = useState([]);
+  const [showFDrop, setShowFDrop]     = useState(false);
+  const [condTable, setCondTable]     = useState(null);
+  const [isOnline, setIsOnline]       = useState(navigator.onLine);
+  const [queueCount, setQueueCount]   = useState(getQ().length);
+  const [ageSugg, setAgeSugg]         = useState(null);
+  const [narrow, setNarrow]           = useState(window.innerWidth < 900);
+  const [caseSaved, setCaseSaved]     = useState(false); // tracks if current form was saved
+
+  const farmType = user?.farm_type || "مزرعة (تسمين)";
+
+  useEffect(() => {
+    const onR = () => setNarrow(window.innerWidth < 900);
+    window.addEventListener("resize", onR);
+    return () => window.removeEventListener("resize", onR);
+  }, []);
+
+  useEffect(() => {
+    loadData("history", []).then(h => { setHistory(h); setSavedFarms([...new Set(h.map(c => c.farm).filter(Boolean))]); });
+    loadData("settings/conditions", null).then(d => setCondTable(d));
+    loadData("settings/other_conditions", []).then(d => setOtherConds(Array.isArray(d) ? d : []));
+    const now = new Date(); let h = now.getHours(), m = now.getMinutes(), p = h >= 12 ? "PM" : "AM";
+    h = h % 12 || 12; setStartTime({ h: String(h).padStart(2, "0"), m: String(m).padStart(2, "0"), p });
+  }, []);
+
+  useEffect(() => {
+    const on = () => { setIsOnline(true); flush(); }; const off = () => setIsOnline(false);
+    window.addEventListener("online", on); window.addEventListener("offline", off);
+    return () => { window.removeEventListener("online", on); window.removeEventListener("offline", off); };
+  }, [history]);
+
+  async function flush() {
+    const q = getQ(); if (!q.length) return;
+    try { const u = [...history, ...q]; await saveData("history", u); setHistory(u); clearQ(); setQueueCount(0); showToast(`✅ مزامنة ${q.length} حالة`, "success"); }
+    catch { showToast("⚠️ تعذّرت المزامنة", "error"); }
+  }
+
+  useEffect(() => {
+    if (!farm.trim() || !history.length) { setAgeSugg(null); return; }
+    const p = [...history].reverse().find(h => h.farm?.trim() === farm.trim());
+    setAgeSugg(p?.raw_data?.age ? p.raw_data.age + 1 : null);
+  }, [farm, history]);
+
+  // ─── Condition detection ──────────────────────────────────────────────────
+  const detected  = detectCondition({ rate, humidity: hum, co2, age, farmType, conditionsTable: condTable });
+  const alerts    = detected.alerts;
+  const rule      = detected.rule;
+
+  const rateN = sf(rate);
+  const spN   = sf(sp);
+
+  // Temperature condition: rate vs setpoint (user-entered rate)
+  const tempCond = rateN !== null && spN !== null
+    ? (rateN > spN ? "ارتفاع" : rateN < spN ? "انخفاض" : "طبيعي")
+    : null;
+
+  const condition = specialCond || tempCond || null;
+  const deviation = rateN !== null && spN !== null ? rateN - spN : null;
+  const avgTemp   = sMode === "temp" ? avg(sensors) : null;
+
+  const condColor = condition === "ارتفاع" ? "#ef4444"
+    : condition === "انخفاض" ? "#3b82f6"
+    : condition === "طبيعي"  ? "#22c55e"
+    : specialCond === "مشكلة هيتر" ? "#f97316"
+    : specialCond === "توقف مراوح" ? "#a855f7"
+    : "#8b949e";
+
+  const toMins  = ({h, m, p}) => { const hv = parseInt(h)||0, mv = parseInt(m)||0; return (p==="PM"&&hv!==12?hv+12:p==="AM"&&hv===12?0:hv)*60+mv; };
+  const durMins = () => { if (!startTime.h || !endTime.h) return 0; const s = toMins(startTime), e = toMins(endTime); return e < s ? e+1440-s : e-s; };
+  const durText = () => { const d = durMins(); if (d <= 0) return ""; const h = Math.floor(d/60), m = d%60; return h > 0 ? `${h}س${m>0?` ${m}د`:""}` : `${m} دقيقة`; };
+  const startStr = () => `${(startTime.h||"00").padStart(2,"0")}:${(startTime.m||"00").padStart(2,"0")} ${startTime.p}`;
+
+  function smartFill() {
+    if (!farm.trim()) { showToast("أدخل رقم المزرعة", "error"); return; }
+    const p = [...history].reverse().find(h => h.farm?.trim() === farm.trim() && (!house || h.house === house));
+    if (!p) { showToast("لا توجد بيانات سابقة", "info"); return; }
+    const r = p.raw_data || {};
+    if (r.set_point) setSp(String(r.set_point));
+    if (r.age && ageSugg) setAge(String(ageSugg));
+    showToast("تم الملء الذكي ✨", "success");
+  }
+
+  function buildCase() {
+    return {
+      timestamp: nowTimestamp(), date: new Date().toLocaleDateString("ar-EG"),
+      time: startStr(), shift: getShiftName(), farm: farm.trim(), house,
+      by_user: user.username, seen: false,
+      raw_data: { f_type: farmType, age: parseInt(age)||0, set_point: spN||0,
+        sensors: sensors.map(s => ({ val: sf(s)??0 })), rate: sf(rate)||0,
+        condition: condition||"انخفاض",
+        start_h: startTime.h, start_m: startTime.m, start_p: startTime.p,
+        end_h: endTime.h, end_m: endTime.m, end_p: endTime.p, duration: durText(),
+        nh3: nh3.trim(), co2: co2.trim(), hum: hum.trim(), press: press.trim(),
+        sensor_mode: sMode, special: specialCond||null }
+    };
+  }
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    if (!farm.trim()) { showToast("⚠️ أدخل رقم المزرعة", "error"); return; }
+    if (!house)       { showToast("⚠️ اختر الحظيرة", "error"); return; }
+    if (!sp)          { showToast("⚠️ أدخل السيت بوينت", "error"); return; }
+    setSaving(true);
+    const c = buildCase();
+    if (isOnline) {
+      try { const u = [...history, c]; await saveData("history", u); setHistory(u); if (!savedFarms.includes(c.farm)) setSavedFarms(p => [...p, c.farm]); setLastCase(c); showToast("✅ تم حفظ الحالة", "success"); reset(); }
+      catch { showToast("❌ خطأ في الحفظ", "error"); }
+    } else { addQ(c); setQueueCount(getQ().length); setLastCase(c); showToast("📴 حُفظ محلياً", "info"); reset(); }
+    setSaving(false);
+  }
+
+  function reset() {
+    setSensors(["","","","","",""]); setRate(""); setNh3(""); setCo2(""); setHum(""); setPress(""); setSpecialCond(null);
+    setCaseSaved(false); setLastCase(null);
+    const now = new Date(); let h = now.getHours(), m = now.getMinutes(), p = h >= 12 ? "PM" : "AM"; h = h%12||12;
+    setStartTime({ h: String(h).padStart(2,"00"), m: String(m).padStart(2,"0"), p }); setEndTime({ h:"", m:"", p:"AM" });
+  }
+
+  // Save case once, then copy. Subsequent copies reuse lastCase without re-saving.
+  async function saveAndCopy(copyFn) {
+    if (!farm.trim()) { showToast("⚠️ أدخل رقم المزرعة", "error"); return; }
+    if (!house)       { showToast("⚠️ أدخل الحظيرة", "error"); return; }
+    if (!sp)          { showToast("⚠️ أدخل السيت بوينت", "error"); return; }
+    setSaving(true);
+    let caseObj = caseSaved && lastCase ? lastCase : null;
+    if (!caseObj) {
+      caseObj = buildCase();
+      if (isOnline) {
+        try {
+          const upd = [...history, caseObj];
+          await saveData("history", upd);
+          setHistory(upd);
+          if (!savedFarms.includes(caseObj.farm)) setSavedFarms(p => [...p, caseObj.farm]);
+        } catch { showToast("❌ خطأ في الحفظ", "error"); setSaving(false); return; }
+      } else {
+        addQ(caseObj);
+        setQueueCount(getQ().length);
+        showToast("📴 حُفظ محلياً — سيُرسل عند عودة الاتصال", "info");
+      }
+      setLastCase(caseObj);
+      setCaseSaved(true);
+    }
+    copyFn(caseObj);
+    setSaving(false);
+    reset();
+  }
+
+  function copyAr()    { saveAndCopy(c => { navigator.clipboard.writeText(buildArabicText(c)); showToast("📱 تم الحفظ + نسخ عربي", "success"); }); }
+  function copyEn()    { saveAndCopy(c => { navigator.clipboard.writeText(buildEnglishText(c)); showToast("📱 Saved + Copied EN", "success"); }); }
+  function copySheet() { saveAndCopy(c => { const r = getSheetRows(c); if (!r.length){showToast("لا بيانات","error");return;} navigator.clipboard.writeText(r.map(x=>x.join("\t")).join("\n")); showToast("📋 تم الحفظ + نسخ Excel", "success"); }); }
+
+  const dur = durText(), durM = durMins(), live = buildCase();
+  const ALL_SPL = ["مشكلة هيتر", "توقف مراوح", ...otherConds];
+
+  const card = { background: "var(--bg-secondary)", border: "1px solid var(--border)", borderRadius: "var(--radius-md)", padding: "16px" };
+  const lbl  = { fontSize: ".68rem", color: "var(--text-muted)", fontWeight: "700", marginBottom: "4px" };
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", height: "100%", gap: "8px", overflow: "hidden" }}>
+
+      {/* ── STATUS BAR ─────────────────────────────────────────────────────── */}
+      <div style={{ display: "flex", alignItems: "center", gap: "7px", flexShrink: 0, flexWrap: "wrap" }}>
+        <span style={{ fontWeight: "900", fontSize: ".95rem" }}>➕ تسجيل حالة</span>
+        <span style={{ fontSize: ".74rem", color: "var(--text-muted)" }}>شفت {getShiftName()}</span>
+
+        {/* Condition badge */}
+        <div style={{ display: "flex", alignItems: "center", gap: "5px", background: condColor+"18", border: `1px solid ${condColor}44`, borderRadius: "100px", padding: "3px 10px", transition: "all .3s" }}>
+          <span style={{ width: "5px", height: "5px", borderRadius: "50%", background: condColor, display: "inline-block", animation: "pulse 2s infinite" }} />
+          <span style={{ color: condColor, fontWeight: "800", fontSize: ".78rem" }}>{condition||"جارٍ الكشف..."}</span>
+          {deviation !== null && <span style={{ fontFamily: "Arial", fontWeight: "900", fontSize: ".72rem", opacity: .8 }}>({deviation>0?"+":""}{fv(deviation)}°)</span>}
+        </div>
+
+        {/* Other conditions — compact inline selector */}
+        <select value={specialCond||""} onChange={e => setSpecialCond(e.target.value||null)}
+          style={{ padding: "3px 8px", borderRadius: "100px", border: `1px solid ${specialCond?"#f97316":"var(--border)"}`,
+            background: specialCond ? "rgba(249,115,22,.12)" : "var(--bg-tertiary)",
+            color: specialCond ? "#f97316" : "var(--text-muted)", fontFamily: "var(--font-ar)",
+            fontSize: ".74rem", fontWeight: "700", outline: "none", cursor: "pointer", maxWidth: "150px" }}>
+          <option value="">⚠️ حالة خاصة</option>
+          {ALL_SPL.map(s => <option key={s} value={s}>{s}</option>)}
+        </select>
+
+        {/* Online */}
+        <div style={{ display: "flex", alignItems: "center", gap: "3px", fontSize: ".7rem", color: isOnline?"#22c55e":"#f97316", fontWeight: "700" }}>
+          <span style={{ width: "5px", height: "5px", borderRadius: "50%", background: isOnline?"#22c55e":"#f97316" }} />
+          {isOnline?"متصل":`غير متصل${queueCount>0?` (${queueCount})`:""}`}
+        </div>
+
+        {alerts.map((a, i) => <div key={i} style={{ fontSize: ".68rem", padding: "2px 7px", borderRadius: "100px", background: "rgba(249,115,22,.12)", border: "1px solid #f97316", color: "#f97316", fontWeight: "700" }}>{a.text}</div>)}
+      </div>
+
+      {/* ── FORM  ──────────────────────────────────────────────────────────── */}
+      <form onSubmit={e => e.preventDefault()} dir="rtl"
+        className={`grid grid-cols-1 lg:grid-cols-3 gap-4 h-full text-right ${narrow ? 'overflow-y-auto' : ''}`}
+        style={{ minHeight: 0 }}>
+
+        {/* ══ LEFT: DATA ENTRY ════════════════════════════════════════════════ */}
+        <div className="flex flex-col gap-4 lg:col-span-2 h-full overflow-y-auto" style={{ minHeight: 0, paddingRight: "4px" }}>
+
+          {/* Farm / House / Age */}
+          <div style={card}>
+            <div className="flex justify-between items-center mb-4">
+              <span className="font-bold text-base">🏡 بيانات المزرعة</span>
+              <div className="flex gap-2">
+                {ageSugg && !age && (
+                  <button type="button" onClick={() => setAge(String(ageSugg))}
+                    style={{ padding: "1px 7px", borderRadius: "100px", border: "1px solid #f59e0b", background: "rgba(245,158,11,.1)", color: "#f59e0b", fontSize: ".68rem", fontWeight: "700", cursor: "pointer" }}>
+                    💡 {ageSugg}ي
+                  </button>
+                )}
+                <button type="button" className="btn btn-ghost" style={{ padding: "3px 10px", fontSize: ".72rem" }} onClick={smartFill}>✨ تعبئة ذكية</button>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full" style={{ minWidth: 0 }}>
+              <div style={{ position: "relative" }}>
+                <div style={lbl}>رقم المزرعة *</div>
+                <input className="form-input" type="number" inputMode="numeric" placeholder="رقم" value={farm}
+                  onChange={e => { setFarm(e.target.value); setFarmSugg(savedFarms.filter(f => f.includes(e.target.value)).slice(0,5)); setShowFDrop(e.target.value.length>0); }}
+                  onBlur={() => setTimeout(() => setShowFDrop(false), 150)}
+                  style={{ padding: "4px 6px", fontSize: ".85rem", height: "32px", fontWeight: "700" }} />
+                {showFDrop && farmSugg.length > 0 && (
+                  <div style={{ position: "absolute", top: "100%", right: 0, left: 0, zIndex: 30, background: "var(--bg-secondary)", border: "1px solid var(--border)", borderRadius: "6px", boxShadow: "var(--shadow-md)", marginTop: "2px" }}>
+                    {farmSugg.map(f => (
+                      <div key={f} onMouseDown={() => { setFarm(f); setShowFDrop(false); }}
+                        style={{ padding: "5px 10px", cursor: "pointer", fontSize: ".82rem", fontWeight: "700" }}
+                        onMouseEnter={e => e.target.style.background = "var(--bg-tertiary)"}
+                        onMouseLeave={e => e.target.style.background = "transparent"}>
+                        🏡 {f}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <div>
+                <div style={lbl}>الحظيرة *</div>
+                <input className="form-input" list="house-opts" placeholder="1-16" value={house}
+                  onChange={e => setHouse(e.target.value)}
+                  style={{ padding: "4px 6px", fontSize: ".85rem", height: "32px", fontWeight: "700" }} />
+                <datalist id="house-opts">{HOUSES.map(h => <option key={h} value={h} />)}</datalist>
+              </div>
+              <div>
+                <div style={lbl}>العمر (يوم)</div>
+                <input className="form-input" list="age-opts" placeholder="1-35" value={age}
+                  onChange={e => setAge(e.target.value)}
+                  style={{ padding: "4px 6px", fontSize: ".85rem", height: "32px", fontWeight: "700" }} />
+                <datalist id="age-opts">{AGES.map(a => <option key={a} value={a} />)}</datalist>
+              </div>
+            </div>
+            {rule && <div style={{ marginTop: "4px", fontSize: ".6rem", color: "var(--text-muted)" }}>📊 {farmType} · ي{rule.ageFrom}–{rule.ageTo} | L{rule.lowTemp??'—'} H+{rule.highTemp??'—'} | RH {rule.lowRH||'—'}%</div>}
+          </div>
+
+          {/* SP + Rate */}
+          <div style={card} className="flex flex-col flex-shrink-0">
+            <div className="font-bold text-sm md:text-base mb-3">🌡️ السيت بوينت والمعدل</div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full" style={{ minWidth: 0 }}>
+              <div>
+                <div style={lbl}>سيت بوينت *</div>
+                <SpinBox color={sp?"var(--accent-green)":"var(--border)"} suffix="°"
+                  onMinus={() => setSp(fv((sf(sp)??32)-.5))} onPlus={() => setSp(fv((sf(sp)??32)+.5))}>
+                  <SmartTempInput value={sp} onChange={setSp} step={.5} placeholder="32.0" />
+                </SpinBox>
+              </div>
+              <div>
+                <div style={{ ...lbl, color: rateN !== null ? condColor : "var(--text-muted)" }}>
+                  المعدل * {deviation !== null ? (deviation > 0 ? "⬆️ ارتفاع" : deviation < 0 ? "⬇️ انخفاض" : "✅ طبيعي") : ""}
+                </div>
+                <SpinBox color={rateN !== null ? condColor : "var(--border)"} suffix="°"
+                  onMinus={() => setRate(fv((sf(rate)??spN??32) - .1))} onPlus={() => setRate(fv((sf(rate)??spN??32) + .1))}>
+                  <SmartTempInput value={rate} onChange={setRate} step={.1} placeholder="32.0" color={rateN !== null ? condColor : undefined} />
+                </SpinBox>
+              </div>
+            </div>
+            {deviation !== null && sp && (
+              <div style={{ marginTop: "5px", height: "4px", background: "var(--bg-tertiary)", borderRadius: "100px", position: "relative", overflow: "hidden" }}>
+                <div style={{ position: "absolute", left: "50%", top: 0, bottom: 0, width: "1px", background: "var(--border)" }} />
+                <div style={{ position: "absolute", height: "100%", borderRadius: "100px", background: condColor, transition: "width .4s, left .4s",
+                  width: `${Math.min(Math.abs(deviation/(spN||1))*50,50)}%`, left: deviation>0?"50%":`${50-Math.min(Math.abs(deviation/(spN||1))*50,50)}%` }} />
+              </div>
+            )}
+          </div>
+
+          {/* ⏰ TIME — between SP and Sensors */}
+          <div style={card} className="flex flex-col flex-shrink-0">
+            <div className="font-bold text-sm md:text-base mb-3">⏰ الوقت</div>
+            <div className="flex gap-4 items-end flex-wrap w-full" style={{ minWidth: 0 }}>
+              <SmartTimeInput label="البداية" {...startTime} onChange={v => setStartTime(p => ({...p,...v}))} />
+              <SmartTimeInput label="النهاية" {...endTime}   onChange={v => setEndTime(p => ({...p,...v}))} />
+              {dur && (
+                <div style={{ padding: "3px 8px", background: durM>=40?"rgba(249,115,22,.12)":"rgba(34,197,94,.08)",
+                  border: `1px solid ${durM>=40?"#f97316":"#22c55e"}`, borderRadius: "6px",
+                  fontSize: ".7rem", fontWeight: "800", color: durM>=40?"#f97316":"#22c55e", flexShrink: 0, alignSelf: "flex-end", marginBottom: "1px" }}>
+                  {dur}{durM>=40?" ⚠️":""}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* SENSORS — animated tabs */}
+          <div style={card} className="flex flex-col flex-1 overflow-hidden h-full">
+            {/* Tab bar */}
+            <div className="flex flex-shrink-0 mb-4 p-1 rounded-lg gap-1" style={{ background: "var(--bg-tertiary)" }}>
+              {[{k:"temp",l:"🌡️ حرارية"},{k:"chem",l:"🧪 كيميائية"}].map(({k,l}) => (
+                <button key={k} type="button"
+                  onClick={() => { setSMode(k); if(k==="temp"){setNh3("");setCo2("");setHum("");setPress("");}else{setSensors(["","","","","",""]);setRate("");} }}
+                  style={{ flex: 1, padding: "5px", border: "none", cursor: "pointer", borderRadius: "4px", fontFamily: "var(--font-ar)", fontSize: ".76rem", fontWeight: "700", transition: "all .25s", background: sMode===k?"var(--accent-blue)":"transparent", color: sMode===k?"#fff":"var(--text-muted)" }}>
+                  {l}
+                </button>
+              ))}
+            </div>
+
+            {/* Sliding panel */}
+            <div style={{ flex: 1, position: "relative", overflow: "hidden" }}>
+              <div style={{ display: "flex", width: "200%", height: "100%", transition: "transform .35s cubic-bezier(.4,0,.2,1)", transform: sMode==="temp"?"translateX(0)":"translateX(50%)" }}>
+
+                {/* ── Temperature ── */}
+                <div className="flex flex-col gap-2 overflow-y-auto w-full flex-shrink-0" style={{ width: "50%", paddingLeft: "12px", paddingRight: "4px" }}>
+                  <div className="grid grid-cols-3 gap-2 w-full flex-1 mb-2">
+                    {sensors.slice(0, 6).map((val, i) => {
+                      const vN = sf(val), diff = vN!==null&&spN!==null ? vN-spN : null;
+                      const sc = diff===null?"var(--border)":diff>0?"#ef4444":diff<0?"#3b82f6":"#22c55e";
+                      const textColor = diff===null?undefined:sc;
+                      const bg = diff===null?"var(--bg-tertiary)":diff>0?"rgba(239,68,68,.07)":diff<0?"rgba(59,130,246,.07)":"rgba(34,197,94,.05)";
+                      return (
+                        <div key={i} style={{ background: bg, border: `1px solid ${vN!==null?sc:"var(--border)"}`, borderRadius: "8px", padding: "6px 4px", display: "flex", flexDirection: "column", justifyContent: "center", transition: "all .2s", minHeight: "60px" }}>
+                          <div style={{ fontSize: ".65rem", color: "var(--text-muted)", fontWeight: "800", marginBottom: "4px", textAlign: "center" }}>حساس {i+1}</div>
+                          <SpinBox color={sc} suffix="°"
+                            onMinus={() => { const n=[...sensors]; n[i]=fv((sf(n[i])??spN??32)-.1); setSensors(n); }}
+                            onPlus={() => { const n=[...sensors]; n[i]=fv((sf(n[i])??spN??32)+.1); setSensors(n); }}>
+                            <SmartTempInput value={val} step={.1} color={textColor} onChange={v => { const n=[...sensors]; n[i]=v; setSensors(n); }} />
+                          </SpinBox>
+                          {diff!==null && <div style={{ marginTop:"6px",height:"3px",background:"var(--bg-primary)",borderRadius:"2px",overflow:"hidden" }}><div style={{ height:"100%",background:sc,width:`${Math.min(Math.abs(diff/(spN||1))*100,100)}%`,transition:"width .3s" }}/></div>}
+                        </div>
+                      );
+                    })}
+                  </div>
+                  {avgTemp!==null && (
+                    <div style={{ padding:"10px 14px",background:"var(--bg-primary)",borderRadius:"10px",display:"flex",justifyContent:"space-between",alignItems:"center",flexShrink:0, marginTop: "auto" }}>
+                      <span style={{ fontSize:".75rem",color:"var(--text-muted)", fontWeight: "700" }}>📊 متوسط الحرارة</span>
+                      <span style={{ fontWeight:"900",color:condColor,fontFamily:"monospace, Arial",fontSize:".95rem" }}>{avgTemp.toFixed(2)}°C</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* ── Chemical ── */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 overflow-y-auto flex-shrink-0" style={{ width: "50%", paddingLeft: "12px", paddingRight: "4px" }}>
+                  {[
+                    { label:"أمونيا", id:"nh3",   val:nh3,   set:setNh3,   unit:"ppm", color:"#a855f7", isFloat:true },
+                    { label:"CO₂",   id:"co2",   val:co2,   set:setCo2,   unit:"ppm", color:"#6366f1", isFloat:false },
+                    { label:"رطوبة", id:"hum",   val:hum,   set:setHum,   unit:"%",   color:"#3b82f6", isFloat:false },
+                    { label:"ضغط",   id:"press", val:press, set:setPress, unit:"Pa",  color:"#22c55e", isFloat:true  },
+                  ].map(({ label, id, val, set, unit, color, isFloat }) => (
+                    <div key={id} style={{ background: val?`${color}10`:"var(--bg-tertiary)", border:`1px solid ${val?color:"var(--border)"}`, borderRadius:"8px", padding:"6px 4px", display: "flex", flexDirection: "column", justifyContent: "center", transition:"all .2s", minHeight: "60px" }}>
+                      <div style={{ fontSize:".65rem", color:val?color:"var(--text-muted)", fontWeight:"800", marginBottom:"4px", textAlign: "center" }}>{label} <span style={{ opacity:.6 }}>({unit})</span></div>
+                      <SpinBox color={color}
+                        onMinus={() => set(v => isFloat?fv((sf(v)??0)-.1):String(Math.max(0,(parseInt(v)||0)-1)))}
+                        onPlus={() => set(v => isFloat?fv((sf(v)??0)+.1):String((parseInt(v)||0)+1))}>
+                        {isFloat
+                          ? <SmartTempInput value={val} onChange={set} color={val?color:undefined} />
+                          : <IntInput       value={val} onChange={set} color={val?color:undefined} />}
+                      </SpinBox>
+                      {id==="hum" && age && rule?.lowRH && (
+                        <div style={{ marginTop:"5px",fontSize:".65rem",color:"var(--text-muted)", textAlign: "center" }}>مثالي: {rule.lowRH}%{rule.highRH?`–${rule.highRH}%`:""}</div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ══ RIGHT: COPY + PREVIEW + SUBMIT ══════════════════════════════════ */}
+        <div className="flex flex-col gap-4 lg:col-span-1 h-full overflow-hidden" style={{ minHeight: 0 }}>
+
+          {/* Compact 3-button copy row */}
+          <div style={card} className="flex flex-col">
+            <div className="font-bold text-sm text-muted mb-2">📤 الإجراءات (حفظ ونسخ)</div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              {[
+                { icon:"📱", line1:"واتساب", line2:"عربي",   fn:copyAr,    c:"#25D366", bg:"rgba(37,211,102," },
+                { icon:"📱", line1:"WhatsApp",line2:"EN",    fn:copyEn,    c:"#22c55e", bg:"rgba(34,197,94,"  },
+                { icon:"📋", line1:"Excel",  line2:"Row",    fn:copySheet, c:"#6366f1", bg:"rgba(99,102,241," },
+              ].map(({ icon, line1, line2, fn, c, bg }) => (
+                <button key={line2} type="button" onClick={fn}
+                  style={{ padding: "8px 4px", borderRadius: "8px", border: `1px solid ${c}50`, background: `${bg}.07)`,
+                    color: c, cursor: "pointer", transition: "all .18s", textAlign: "center", lineHeight: 1.3, fontFamily: "var(--font-ar)" }}
+                  onMouseEnter={e => { e.currentTarget.style.background=`${bg}.18)`; e.currentTarget.style.borderColor=c; }}
+                  onMouseLeave={e => { e.currentTarget.style.background=`${bg}.07)`; e.currentTarget.style.borderColor=`${c}50`; }}>
+                  <div style={{ fontSize: "1.1rem" }}>{icon}</div>
+                  <div style={{ fontSize: ".68rem", fontWeight: "800" }}>{line1}</div>
+                  <div style={{ fontSize: ".62rem", fontWeight: "700", opacity: .8 }}>{line2}</div>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* WhatsApp Preview */}
+          <div style={{ ...card, flex: 1, minHeight: 0, overflow: "hidden", background: "rgba(37,211,102,.04)", borderColor: "#25D36630" }}>
+            <div style={{ fontSize: ".68rem", color: "#25D366", fontWeight: "800", marginBottom: "5px" }}>📱 معاينة واتساب</div>
+            <pre style={{ fontFamily: "var(--font-ar)", fontSize: ".72rem", lineHeight: "1.7", color: "var(--text-secondary)", whiteSpace: "pre-wrap", margin: 0, overflow: "auto", height: "calc(100% - 22px)" }}>
+              {(farm||house) ? buildArabicText(live) : "أدخل البيانات لمعاينة الرسالة..."}
+            </pre>
+          </div>
+
+        </div>
+      </form>
+
+      <style>{`
+        @keyframes pulse { 0%,100%{opacity:1}50%{opacity:.55} }
+        input[type=number]::-webkit-outer-spin-button,
+        input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; }
+        input[type=number] { -moz-appearance: textfield; }
+        /* ─ Responsive ──────────────────────────────────────────── */
+        @media (max-width: 900px) {
+          .sensor-grid { grid-template-columns: 1fr 1fr !important; }
+        }
+        @media (max-width: 500px) {
+          .sensor-grid { grid-template-columns: 1fr 1fr !important; }
+        }
+      `}</style>
+    </div>
+  );
+}
