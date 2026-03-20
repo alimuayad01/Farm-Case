@@ -12,6 +12,10 @@ export function safeFloat(val) {
   return isNaN(n) ? 0 : n;
 }
 
+export const sf = v => { const n = parseFloat(v); return isNaN(n) ? null : n; };
+export const fv = v => { const n = sf(v); if (n === null) return ""; return n % 1 === 0 ? String(n) : n.toFixed(2).replace(/\.?0+$/, ""); };
+export const avg = arr => { const n = arr.map(v => sf(typeof v === "object" ? v.val : v)).filter(x => x !== null); return n.length ? n.reduce((a, b) => a + b, 0) / n.length : null; };
+
 export function isNumeric(val) {
   return val !== "" && val !== null && !isNaN(parseFloat(val));
 }
