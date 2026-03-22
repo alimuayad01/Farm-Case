@@ -165,6 +165,161 @@ body {
 }
 .btn-logout:hover { background: #c0392b; }
 
+/* ─── Header ────────────────────────────────────────────────────────────── */
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 28px;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border);
+  height: 64px;
+}
+
+.header-spacer {
+  flex: 1;
+}
+
+.header-profile-menu {
+  position: relative;
+}
+
+.header-profile-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 10px;
+  border-radius: 100px;
+  border: 1px solid var(--border);
+  background: transparent;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.header-profile-btn:hover {
+  background: var(--bg-tertiary);
+}
+
+.header-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid var(--accent-blue);
+  flex-shrink: 0;
+}
+
+.header-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.header-avatar-fallback {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #2563eb, #7c3aed);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: .8rem;
+  font-weight: 900;
+}
+
+.header-user-info {
+  text-align: right;
+  min-width: 0;
+}
+
+.header-user-name {
+  font-weight: 800;
+  font-size: .85rem;
+  color: var(--text-primary);
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.header-user-role {
+  font-size: .65rem;
+  color: var(--text-muted);
+  font-weight: 700;
+}
+
+.header-chevron {
+  color: var(--text-muted);
+  font-size: .7rem;
+  transition: transform .2s;
+}
+
+.header-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0; /* Align left corner in RTL so it opens inwards not out of screen, wait RTL means right is start, left is end. Since it's on left side of screen, right: 0 or left: 0? In RTL, left: 0 aligns its left edge to the menu's left edge */
+  left: 0;
+  min-width: 200px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+  z-index: 50;
+  animation: slideUp .2s ease;
+}
+
+.header-dropdown-header {
+  padding: 12px 16px;
+  background: var(--bg-tertiary);
+  border-bottom: 1px solid var(--border);
+}
+
+.header-dropdown-name {
+  font-weight: 800;
+  font-size: .85rem;
+}
+
+.header-dropdown-username {
+  font-size: .7rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.header-dropdown-body {
+  padding: 8px;
+}
+
+.header-dropdown-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-primary);
+  font-family: var(--font-ar);
+  font-size: .85rem;
+  font-weight: 700;
+  cursor: pointer;
+  text-align: right;
+  transition: var(--transition);
+}
+
+.header-dropdown-item:hover {
+  background: var(--bg-tertiary);
+}
+
+.header-dropdown-item.logout {
+  color: #ef4444;
+  margin-top: 4px;
+}
+
+.header-dropdown-item.logout:hover {
+  background: rgba(239, 68, 68, .08);
+}
 /* ─── Main Content ──────────────────────────────────────────────────────── */
 .main-content {
   flex: 1;
@@ -180,16 +335,36 @@ body {
   height: 100%; /* ضمان ارتفاع المحتوى */
 }
 
+/* ─── Animations ────────────────────────────────────────────────────────── */
+@keyframes fadeSlideUpAnim {
+  0% { opacity: 0; transform: translateY(12px) scale(0.995); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.page-transition {
+  animation: fadeSlideUpAnim 0.35s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+  height: 100%;
+}
+
+/* Active scale on click */
+.btn:active, .sidebar-nav-item:active, .header-profile-btn:active {
+  transform: scale(0.96);
+}
+
 /* ─── Cards ─────────────────────────────────────────────────────────────── */
 .card {
   background: var(--bg-secondary);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   padding: 20px 24px;
-  transition: var(--transition);
+  transition: transform 0.3s ease, border-color 0.2s ease, box-shadow 0.3s ease;
 }
 
-.card:hover { border-color: var(--border-hover); }
+.card:hover { 
+  border-color: var(--border-hover); 
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+}
 
 .stat-cards { display: flex; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; }
 
@@ -258,6 +433,8 @@ body {
 .btn-success:hover   { background: #16a34a; }
 .btn-danger    { background: var(--accent-red);    color: #fff; }
 .btn-danger:hover    { background: #dc2626; }
+.btn-orange    { background: var(--accent-orange); color: #fff; }
+.btn-orange:hover    { background: #ea580c; }
 .btn-ghost     { background: transparent; color: var(--text-muted); border: 1px solid var(--border); }
 .btn-ghost:hover     { background: var(--bg-tertiary); color: var(--text-primary); }
 .btn-sm        { padding: 6px 14px; font-size: .82rem; }

@@ -21,35 +21,34 @@ export default function SmartTempInput({ value, onChange, step = 0.1, placeholde
   }, [str]);
 
   function handleKeyDown(e) {
-    if (["Tab", "Enter", "Shift"].includes(e.key)) return;
-    if (e.key === "ArrowUp")   { e.preventDefault(); onChange(fv((sf(value) ?? 0) + step)); return; }
-    if (e.key === "ArrowDown") { e.preventDefault(); onChange(fv((sf(value) ?? 0) - step)); return; }
+    if (e.key === "Tab" || e.key === "Enter" || e.key === "Shift") return;
+    if (e.key === "ArrowUp")   { e.preventDefault(); onChange(Math.max(0, fv((sf(value) ?? 0) + step))); return; }
+    if (e.key === "ArrowDown") { e.preventDefault(); onChange(Math.max(0, fv((sf(value) ?? 0) - step))); return; }
     if (e.key === "Escape" || e.key === "Delete") { e.preventDefault(); onChange(""); return; }
-    if (e.key === "-" && !str) { e.preventDefault(); onChange("-"); return; }
+    if (e.key === "-") { e.preventDefault(); return; }
     if (e.key === "Backspace") {
       e.preventDefault();
-      if (hasDot && decPt === "")     onChange((isNeg ? "-" : "") + intPt);
-      else if (hasDot)                onChange((isNeg ? "-" : "") + intPt + "." + decPt.slice(0, -1));
-      else if (intPt.length > 0)      onChange((isNeg ? "-" : "") + intPt.slice(0, -1));
-      else if (isNeg)                 onChange("");
+      if (hasDot && decPt === "")     onChange(intPt);
+      else if (hasDot)                onChange(intPt + "." + decPt.slice(0, -1));
+      else if (intPt.length > 0)      onChange(intPt.slice(0, -1));
       return;
     }
     if (e.key === "." && !hasDot && intPt.length > 0) {
-      e.preventDefault(); onChange((isNeg ? "-" : "") + intPt + "."); return;
+      e.preventDefault(); onChange(intPt + "."); return;
     }
     if (!/^[0-9]$/.test(e.key)) { e.preventDefault(); return; }
     e.preventDefault();
     if (!hasDot) {
-      if (intPt.length >= 2) onChange((isNeg ? "-" : "") + intPt + "." + e.key); // auto-decimal
-      else                   onChange((isNeg ? "-" : "") + intPt + e.key);
+      if (intPt.length >= 2) onChange(intPt + "." + e.key); // auto-decimal
+      else                   onChange(intPt + e.key);
     } else {
-      if (decPt.length < 1)  onChange((isNeg ? "-" : "") + intPt + "." + decPt + e.key);
+      if (decPt.length < 1)  onChange(intPt + "." + decPt + e.key);
     }
   }
 
   useEffect(() => {
     const el = ref.current; if (!el) return;
-    const wh = e => { e.preventDefault(); onChange(fv((sf(value) ?? 0) + (e.deltaY < 0 ? step : -step))); };
+    const wh = e => { e.preventDefault(); onChange(Math.max(0, fv((sf(value) ?? 0) + (e.deltaY < 0 ? step : -step)))); };
     el.addEventListener("wheel", wh, { passive: false });
     return () => el.removeEventListener("wheel", wh);
   }, [value, step]);

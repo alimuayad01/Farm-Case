@@ -1,4 +1,4 @@
-// â”€â”€â”€ ØªØ´ÙÙŠØ± ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ± (SHA-256 + Salt) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── تشفير كلمة المرور (SHA-256 + Salt) ────────────────────────────────────
 const SALT = "FarmCase_S3cur3_2025";
 
 export async function hashPassword(plain) {
@@ -8,24 +8,24 @@ export async function hashPassword(plain) {
 }
 
 /**
- * Ø§Ù„ØªØ­Ù‚Ù‚ Ù…Ù† ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ± Ù…Ø¹ Ø¯Ø¹Ù… ÙƒÙ„Ø§ Ø§Ù„ØµÙŠØºØªÙŠÙ†:
- * - SHA-256 Ù…Ø´ÙØ±Ø© (64 Ø­Ø±Ù) - Ø§Ù„ØµÙŠØºØ© Ø§Ù„Ø¬Ø¯ÙŠØ¯Ø©
- * - Ù†Øµ Ø¹Ø§Ø¯ÙŠ (legacy) - Ù„Ù„Ø­Ø³Ø§Ø¨Ø§Øª Ø§Ù„Ù‚Ø¯ÙŠÙ…Ø© Ù‚Ø¨Ù„ ØªÙØ¹ÙŠÙ„ Ø§Ù„ØªØ´ÙÙŠØ±
- * ÙŠØ¹ÙŠØ¯: { ok: boolean, needsUpgrade: boolean, newHash: string|null }
+ * التحقق من كلمة المرور مع دعم كلا الصيغتين:
+ * - SHA-256 مشفرة (64 حرف) - الصيغة الجديدة
+ * - نص عادي (legacy) - للحسابات القديمة قبل تفعيل التشفير
+ * يعيد: { ok: boolean, needsUpgrade: boolean, newHash: string|null }
  */
 export async function verifyPassword(plain, stored) {
   if (!stored) {
-    // Ø­Ø³Ø§Ø¨ Ø¨Ø¯ÙˆÙ† ÙƒÙ„Ù…Ø© Ù…Ø±ÙˆØ± â€” Ù†Ù‚Ø¨Ù„ Ø£ÙŠ Ø´ÙŠØ¡ (Ø­ØªÙ‰ ÙØ§Ø±Øº)
+    // حساب بدون كلمة مرور — نقبل أي شيء (حتى فارغ)
     return { ok: plain === "" || plain === stored, needsUpgrade: false, newHash: null };
   }
 
-  // â”€â”€â”€ Ù…Ø­Ø§ÙˆÙ„Ø© 1: Ù…Ù‚Ø§Ø±Ù†Ø© SHA-256 (Ø§Ù„Ø­Ø³Ø§Ø¨Ø§Øª Ø§Ù„Ù…Ø­Ø¯Ù‘Ø«Ø©) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ─── محاولة 1: مقارنة SHA-256 (الحسابات المحدّثة) ─────────────────
   const hashed = await hashPassword(plain);
   if (hashed === stored) return { ok: true, needsUpgrade: false, newHash: null };
 
-  // â”€â”€â”€ Ù…Ø­Ø§ÙˆÙ„Ø© 2: Ù…Ù‚Ø§Ø±Ù†Ø© Ù†Øµ Ø¹Ø§Ø¯ÙŠ (Ø§Ù„Ø­Ø³Ø§Ø¨Ø§Øª Ø§Ù„Ù‚Ø¯ÙŠÙ…Ø©) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ─── محاولة 2: مقارنة نص عادي (الحسابات القديمة) ──────────────────
   if (plain === stored) {
-    // Ù†Ø¬Ø­! ÙŠØ­ØªØ§Ø¬ ØªØ±Ù‚ÙŠØ© Ù„Ù„ØµÙŠØºØ© Ø§Ù„Ù…Ø´ÙØ±Ø©
+    // نجح! يحتاج ترقية للصيغة المشفرة
     return { ok: true, needsUpgrade: true, newHash: hashed };
   }
 
@@ -33,7 +33,7 @@ export async function verifyPassword(plain, stored) {
 }
 
 
-// â”€â”€â”€ Session (Ø¨Ø¯ÙˆÙ† JWTØŒ Ù†Ø­ÙØ¸ Ø¨ÙŠØ§Ù†Ø§Øª Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù… ÙÙŠ sessionStorage) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Session (بدون JWT، نحفظ بيانات المستخدم في sessionStorage) ──────────
 export function setCurrentUser(user) {
   sessionStorage.setItem("currentUser", JSON.stringify(user));
 }

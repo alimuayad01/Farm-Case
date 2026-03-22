@@ -1,15 +1,15 @@
 /**
  * conditions.js
- * Ø¬Ø¯ÙˆÙ„ Ø§Ù„Ø´Ø±ÙˆØ· Ø§Ù„Ø§ÙØªØ±Ø§Ø¶ÙŠ + Ø¯ÙˆØ§Ù„ Ø§Ù„ÙƒØ´Ù Ø§Ù„ØªÙ„Ù‚Ø§Ø¦ÙŠ Ø¹Ù† Ù†ÙˆØ¹ Ø§Ù„Ø­Ø§Ù„Ø©
- * Ù…Ø³ØªØ®Ø±Ø¬ Ù…Ù† ØµÙˆØ±Ø© Ø¬Ø¯ÙˆÙ„ Sama Karbala Poultry - Broiler Farming
+ * جدول الشروط الافتراضي + دوال الكشف التلقائي عن نوع الحالة
+ * مستخرج من صورة جدول Sama Karbala Poultry - Broiler Farming
  */
 
-// â”€â”€â”€ Ø§Ù„Ø¬Ø¯ÙˆÙ„ Ø§Ù„Ø§ÙØªØ±Ø§Ø¶ÙŠ â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-// lowTemp  : Ø­Ø¯ Rate Ø§Ù„Ø£Ø¯Ù†Ù‰  â†’ Ø§Ù†Ø®ÙØ§Ø¶ Ø¥Ø°Ø§ rate <= lowTemp
-// highTemp : Ø­Ø¯ Rate Ø§Ù„Ø£Ø¹Ù„Ù‰ â†’ Ø§Ø±ØªÙØ§Ø¹ Ø¥Ø°Ø§ rate >= highTemp
-// lowRH    : Ø­Ø¯ Ø±Ø·ÙˆØ¨Ø© Ù…Ù†Ø®ÙØ¶ (%)
-// highRH   : Ø­Ø¯ Ø±Ø·ÙˆØ¨Ø© Ù…Ø±ØªÙØ¹ (%)
-// co2      : Ø­Ø¯ Ø«Ø§Ù†ÙŠ Ø£ÙƒØ³ÙŠØ¯ Ø§Ù„ÙƒØ±Ø¨ÙˆÙ† (ppm)
+// ─── الجدول الافتراضي ────────────────────────────────────────────────────────
+// lowTemp  : حد Rate الأدنى  → انخفاض إذا rate <= lowTemp
+// highTemp : حد Rate الأعلى → ارتفاع إذا rate >= highTemp
+// lowRH    : حد رطوبة منخفض (%)
+// highRH   : حد رطوبة مرتفع (%)
+// co2      : حد ثاني أكسيد الكربون (ppm)
 export const DEFAULT_BROILER_TABLE = [
   { ageFrom: 0,  ageTo: 1,  lowTemp: null, highTemp: 1,  lowRH: 45, highRH: null, co2: null },
   { ageFrom: 2,  ageTo: 3,  lowTemp: null, highTemp: 1,  lowRH: 50, highRH: null, co2: null },
@@ -19,22 +19,22 @@ export const DEFAULT_BROILER_TABLE = [
   { ageFrom: 20, ageTo: 99, lowTemp: -2,   highTemp: 2,  lowRH: 55, highRH: 85,   co2: 3000 },
 ];
 
-// Ù†ÙØ³ Ø§Ù„Ù‚ÙˆØ§Ø¹Ø¯ Ù„Ù„Ø£Ù†ÙˆØ§Ø¹ Ø§Ù„Ø£Ø®Ø±Ù‰ (ÙŠÙ…ÙƒÙ† ØªØ¹Ø¯ÙŠÙ„Ù‡Ø§ Ù„Ø§Ø­Ù‚Ø§Ù‹ Ù…Ù† Ø§Ù„Ø¥Ø¹Ø¯Ø§Ø¯Ø§Øª)
+// نفس القواعد للأنواع الأخرى (يمكن تعديلها لاحقاً من الإعدادات)
 export const DEFAULT_TABLES = {
-  "Ù…Ø²Ø±Ø¹Ø© (ØªØ³Ù…ÙŠÙ†)": DEFAULT_BROILER_TABLE,
-  "Ø¥Ù†ØªØ§Ø¬":          DEFAULT_BROILER_TABLE,
-  "ØªØ±Ø¨ÙŠØ©":          DEFAULT_BROILER_TABLE,
-  "Ø¬Ø¯ÙˆØ¯":           DEFAULT_BROILER_TABLE,
-  "Ø§Ù…Ù‡Ø§Øª Ø§Ù„Ø¨ÙŠØ§Ø¶":   DEFAULT_BROILER_TABLE,
+  "مزرعة (تسمين)": DEFAULT_BROILER_TABLE,
+  "إنتاج":          DEFAULT_BROILER_TABLE,
+  "تربية":          DEFAULT_BROILER_TABLE,
+  "جدود":           DEFAULT_BROILER_TABLE,
+  "امهات البياض":   DEFAULT_BROILER_TABLE,
 };
 
-// â”€â”€â”€ Ø¬Ù„Ø¨ Ù‚Ø§Ø¹Ø¯Ø© Ø§Ù„ÙŠÙˆÙ… â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── جلب قاعدة اليوم ─────────────────────────────────────────────────────────
 export function getRuleForAge(age, table) {
   const ageNum = parseInt(age) || 0;
   return table?.find(r => ageNum >= r.ageFrom && ageNum <= r.ageTo) || null;
 }
 
-// â”€â”€â”€ Ø§Ù„ÙƒØ´Ù Ø§Ù„ØªÙ„Ù‚Ø§Ø¦ÙŠ Ø¹Ù† Ù†ÙˆØ¹ Ø§Ù„Ø­Ø§Ù„Ø© Ù…Ù† Ø§Ù„Ø¨ÙŠØ§Ù†Ø§Øª â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── الكشف التلقائي عن نوع الحالة من البيانات ──────────────────────────────
 export function detectCondition({ rate, humidity, co2, age, farmType, conditionsTable }) {
   const table = conditionsTable?.[farmType] || DEFAULT_BROILER_TABLE;
   const rule  = getRuleForAge(age, table);
@@ -43,55 +43,55 @@ export function detectCondition({ rate, humidity, co2, age, farmType, conditions
   const co2N  = parseFloat(co2);
 
   const alerts   = [];
-  let tempCond   = null;   // "Ø§Ø±ØªÙØ§Ø¹" | "Ø§Ù†Ø®ÙØ§Ø¶" | null
+  let tempCond   = null;   // "ارتفاع" | "انخفاض" | null
 
-  // â”€ Ø­Ø§Ù„Ø© Ø¯Ø±Ø¬Ø© Ø§Ù„Ø­Ø±Ø§Ø±Ø© â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ─ حالة درجة الحرارة ───────────────────────────────────────────────────────
   if (!isNaN(rateN) && rule) {
-    if (rule.highTemp !== null && rateN >= rule.highTemp)      tempCond = "Ø§Ø±ØªÙØ§Ø¹";
-    else if (rule.lowTemp !== null && rateN <= rule.lowTemp)  tempCond = "Ø§Ù†Ø®ÙØ§Ø¶";
-    else if (rateN > 0)   tempCond = "Ø§Ø±ØªÙØ§Ø¹";  // fallback Ø¥Ø°Ø§ Ù„Ù… ØªÙˆØ¬Ø¯ Ù‚Ø§Ø¹Ø¯Ø©
-    else if (rateN < 0)   tempCond = "Ø§Ù†Ø®ÙØ§Ø¶";
+    if (rule.highTemp !== null && rateN >= rule.highTemp)      tempCond = "ارتفاع";
+    else if (rule.lowTemp !== null && rateN <= rule.lowTemp)  tempCond = "انخفاض";
+    else if (rateN > 0)   tempCond = "ارتفاع";  // fallback إذا لم توجد قاعدة
+    else if (rateN < 0)   tempCond = "انخفاض";
   } else if (!isNaN(rateN)) {
-    tempCond = rateN > 0 ? "Ø§Ø±ØªÙØ§Ø¹" : rateN < 0 ? "Ø§Ù†Ø®ÙØ§Ø¶" : null;
+    tempCond = rateN > 0 ? "ارتفاع" : rateN < 0 ? "انخفاض" : null;
   }
 
-  // â”€ ØªØ­Ø°ÙŠØ±Ø§Øª Ø§Ù„Ø±Ø·ÙˆØ¨Ø© â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ─ تحذيرات الرطوبة ────────────────────────────────────────────────────────
   if (!isNaN(humN) && rule) {
     if (rule.highRH !== null && humN > rule.highRH)
-      alerts.push({ type: "hum_high", text: `ðŸ”´ Ø±Ø·ÙˆØ¨Ø© Ø¹Ø§Ù„ÙŠØ©: ${humN}%  (Ø§Ù„Ø­Ø¯: ${rule.highRH}%)` });
+      alerts.push({ type: "hum_high", text: `🔴 رطوبة عالية: ${humN}%  (الحد: ${rule.highRH}%)` });
     if (rule.lowRH !== null && humN < rule.lowRH)
-      alerts.push({ type: "hum_low",  text: `ðŸ”µ Ø±Ø·ÙˆØ¨Ø© Ù…Ù†Ø®ÙØ¶Ø©: ${humN}%  (Ø§Ù„Ø­Ø¯: ${rule.lowRH}%)` });
+      alerts.push({ type: "hum_low",  text: `🔵 رطوبة منخفضة: ${humN}%  (الحد: ${rule.lowRH}%)` });
   }
 
-  // â”€ ØªØ­Ø°ÙŠØ± CO2 â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ─ تحذير CO2 ──────────────────────────────────────────────────────────────
   if (!isNaN(co2N) && rule?.co2 !== null && co2N > rule.co2)
-    alerts.push({ type: "co2_high", text: `ðŸŸ  COâ‚‚ Ù…Ø±ØªÙØ¹: ${co2N} ppm  (Ø§Ù„Ø­Ø¯: ${rule.co2} ppm)` });
+    alerts.push({ type: "co2_high", text: `🟠 CO₂ مرتفع: ${co2N} ppm  (الحد: ${rule.co2} ppm)` });
 
   return { tempCond, alerts, rule };
 }
 
-// â”€â”€â”€ Ø¨Ù†Ø§Ø¡ Ù†Øµ Ø§Ù„ÙˆØ§ØªØ³Ø§Ø¨ Ø§Ù„Ø¹Ø±Ø¨ÙŠ (Ù…Ø·Ø§Ø¨Ù‚ Ù„Ù€ export_manager.py) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── بناء نص الواتساب العربي (مطابق لـ export_manager.py) ───────────────────
 export function buildArabicText(caseData) {
   const r = caseData.raw_data || {};
-  const condition = r.condition || "Ø§Ù†Ø®ÙØ§Ø¶";
+  const condition = r.condition || "انخفاض";
   const condHeaderMap = {
-    "Ø§Ù†Ø®ÙØ§Ø¶":              "Ø§Ù†Ø®ÙØ§Ø¶ ÙÙŠ",
-    "Ø§Ø±ØªÙØ§Ø¹":              "Ø§Ø±ØªÙØ§Ø¹ ÙÙŠ",
-    "Ù…Ø´ÙƒÙ„Ø© Ù‡ÙŠØªØ±":         "Ù…Ø´ÙƒÙ„Ø© Ù‡ÙŠØªØ± (Ø·Ù„Ø¨ Ù‡ÙŠØªØ± Ø¹Ø§Ù„ÙŠ)",
-    "ØªÙˆÙ‚Ù Ù…Ø±Ø§ÙˆØ­":         "ØªÙˆÙ‚Ù Ù…Ø±Ø§ÙˆØ­",
-    "Ù…Ø²Ø±Ø¹Ø© ÙƒØ§Ù…Ù„Ø© (Ù…ØªØ¹Ø¯Ø¯)": "Ø§Ù†Ø®ÙØ§Ø¶ ÙÙŠ",
+    "انخفاض":              "انخفاض في",
+    "ارتفاع":              "ارتفاع في",
+    "مشكلة هيتر":         "مشكلة هيتر (طلب هيتر عالي)",
+    "توقف مراوح":         "توقف مراوح",
+    "مزرعة كاملة (متعدد)": "انخفاض في",
   };
   const condHeader = condHeaderMap[condition] || condition;
-  const arrow = "â¬…";
+  const arrow = "⬅";
 
-  const isBroiler = ["Ù…Ø²Ø±Ø¹Ø© (ØªØ³Ù…ÙŠÙ†)", "Ø¬Ø¯ÙˆØ¯", "Ø§Ù…Ù‡Ø§Øª Ø§Ù„Ø¨ÙŠØ§Ø¶"].includes(r.f_type);
-  const fTypeAr   = isBroiler ? "Ù…Ø²Ø±Ø¹Ø©" : r.f_type === "Ø¥Ù†ØªØ§Ø¬" ? "Ø¥Ù†ØªØ§Ø¬" : "ØªØ±Ø¨ÙŠØ©";
+  const isBroiler = ["مزرعة (تسمين)", "جدود", "امهات البياض"].includes(r.f_type);
+  const fTypeAr   = isBroiler ? "مزرعة" : r.f_type === "إنتاج" ? "إنتاج" : "تربية";
   const sensNamesAr = [
-    "Ø§Ù„Ø­Ø³Ù€Ø§Ø³ Ø§Ù„Ø§ÙˆÙ„ ", "Ø§Ù„Ø­Ø³Ù€Ø§Ø³ Ø§Ù„Ø«Ø§Ù†ÙŠ", "Ø§Ù„Ø­Ø³Ù€Ø§Ø³ Ø§Ù„Ø«Ø§Ù„Ø«",
-    "Ø§Ù„Ø­Ø³Ù€Ø§Ø³ Ø§Ù„Ø±Ø§Ø¨Ø¹", "Ø§Ù„Ø­Ø³Ù€Ø§Ø³ Ø§Ù„Ø®Ø§Ù…Ø³", "Ø§Ù„Ø­Ø³Ù€Ø§Ø³ Ø§Ù„Ø³Ø§Ø¯Ø³"
+    "الحسـاس الاول ", "الحسـاس الثاني", "الحسـاس الثالث",
+    "الحسـاس الرابع", "الحسـاس الخامس", "الحسـاس السادس"
   ];
 
-  // ÙÙ‚Ø· Ø§Ù„Ø­Ø³Ø§Ø³Ø§Øª Ø§Ù„Ù…Ù…Ù„ÙˆØ¡Ø©
+  // فقط الحساسات المملوءة
   const filled = (r.sensors || [])
     .map((s, i) => [i + 1, fmtV(s?.val ?? s)])
     .filter(([, v]) => v !== "");
@@ -99,70 +99,95 @@ export function buildArabicText(caseData) {
   const isChem     = !!(r.nh3 || r.co2 || r.hum || r.press);
   const rateStr    = isChem ? "" : fmtV(r.rate);
   const spStr      = fmtV(r.set_point);
-  const ageStr     = r.age ? `${r.age} ÙŠÙˆÙ…` : "â€”";
+  const ageStr     = r.age ? `${r.age} يوم` : "";
 
-  let text = `${fTypeAr} - ${caseData.farm}\n`;
-  text += `Ø­Ø¸ÙŠØ±Ø© - ${caseData.house} - Ø§Ù„Ø¹Ù…Ø± - ${ageStr}\n`;
+  let text = `${fTypeAr} - ${caseData.farm || ""}\n`;
+  
+  if (caseData.house) {
+    text += `حظيرة - ${caseData.house}`;
+    if (ageStr) text += ` - العمر - ${ageStr}`;
+    text += "\n";
+  }
+
   text += `${condHeader} :-\n`;
 
   if (filled.length > 0) {
-    filled.forEach(([idx, val]) => { text += `${sensNamesAr[idx-1]} ${arrow} Â°${val}\n`; });
-    if (filled.length >= 3 && rateStr) text += `Ù…Ø¹Ø¯Ù„ Ø¯Ø±Ø¬Ø© Ø§Ù„Ø­Ø±Ø§Ø±Ø© ${arrow} Â°${rateStr}\n`;
-  } else if (r.nh3)   { text += `Ø­Ø³Ø§Ø³ Ø§Ù„Ù€(NHÂ³) ${arrow} ppm ${r.nh3}\n`; }
-  else if (r.co2)     { text += `Ø­Ø³Ø§Ø³ Ø§Ù„Ù€(COÂ²) ${arrow} ppm ${r.co2}\n`; }
-  else if (r.hum)     { text += `Ø­Ø³Ø§Ø³ Ø§Ù„Ø±Ø·ÙˆØ¨Ø© ${arrow} ${r.hum} %\n`; }
-  else if (r.press)   { text += `Ø­Ø³Ø§Ø³ Ø§Ù„Ø¶ØºØ· ${arrow} ${r.press} Pa\n`; }
-  else if (rateStr)   { text += `Ù…Ø¹Ø¯Ù„ Ø¯Ø±Ø¬Ø© Ø§Ù„Ø­Ø±Ø§Ø±Ø© ${arrow} Â°${rateStr}\n`; }
+    filled.forEach(([idx, val]) => { text += `${sensNamesAr[idx-1]} ${arrow} °${val}\n`; });
+    if (filled.length >= 3 && rateStr) text += `معدل درجة الحرارة ${arrow} °${rateStr}\n`;
+  } else if (rateStr) {
+    text += `معدل درجة الحرارة ${arrow} °${rateStr}\n`;
+  }
 
-  if (spStr && !isChem) text += `Ø§Ù„Ù€Ø³Ù€ÙŠÙ€Øª Ø¨Ù€ÙˆÙŠÙ€Ù†Ù€Øª ${arrow} Â°${spStr}\n`;
-  text += `Ø¨Ø¯Ø§ÙŠØ© Ø§Ù„Ø­Ø§Ù„Ø© ${arrow} ${caseData.time}\n`;
-  if (r.duration)     text += `Ù…Ø¯Ø© Ø§Ù„Ù…Ø¹Ø§Ù„Ø¬Ø© ${arrow} ${r.duration}\n\n`;
+  if (r.nh3)   text += `حساس الـ(NH³) ${arrow} ppm ${r.nh3}\n`;
+  if (r.co2)   text += `حساس الـ(CO²) ${arrow} ppm ${r.co2}\n`;
+  if (r.hum)   text += `حساس الرطوبة ${arrow} ${r.hum} %\n`;
+  if (r.press) text += `حساس الضغط ${arrow} ${r.press} Pa\n`;
+
+  if (spStr && !isChem) text += `الـسـيـت بـويـنـت ${arrow} °${spStr}\n`;
+  if (caseData.time)    text += `بداية الحالة ${arrow} ${caseData.time}\n`;
+  if (r.duration)       text += `مدة المعالجة ${arrow} ${r.duration}\n\n`;
 
   return text;
 }
 
-// â”€â”€â”€ Ù†Øµ Ø¥Ù†Ø¬Ù„ÙŠØ²ÙŠ â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── نص إنجليزي ──────────────────────────────────────────────────────────────
 export function buildEnglishText(caseData) {
   const r = caseData.raw_data || {};
-  const condition = r.condition || "Ø§Ù†Ø®ÙØ§Ø¶";
+  const condition = r.condition || "انخفاض";
   const condHeaderMap = {
-    "Ø§Ù†Ø®ÙØ§Ø¶": "Gradual Low", "Ø§Ø±ØªÙØ§Ø¹": "Gradual High",
-    "Ù…Ø´ÙƒÙ„Ø© Ù‡ÙŠØªØ±": "Heater Problem", "ØªÙˆÙ‚Ù Ù…Ø±Ø§ÙˆØ­": "Fan's Stop",
-    "Ù…Ø²Ø±Ø¹Ø© ÙƒØ§Ù…Ù„Ø© (Ù…ØªØ¹Ø¯Ø¯)": "Low Temperature",
+    "انخفاض": "Gradual Low", "ارتفاع": "Gradual High",
+    "مشكلة هيتر": "Heater Problem", "توقف مراوح": "Fan's Stop",
+    "مزرعة كاملة (متعدد)": "Low Temperature",
   };
   const condHeader = condHeaderMap[condition] || condition;
-  const arrow  = "âž¡";
-  const typeEN = { "Ù…Ø²Ø±Ø¹Ø© (ØªØ³Ù…ÙŠÙ†)":"Broiler","Ø¥Ù†ØªØ§Ø¬":"Production","ØªØ±Ø¨ÙŠØ©":"Rearing","Ø¬Ø¯ÙˆØ¯":"Grand Parents (G.P)","Ø§Ù…Ù‡Ø§Øª Ø§Ù„Ø¨ÙŠØ§Ø¶":"Layer Breeder" };
+  const arrow  = "➡";
+  const typeEN = { "مزرعة (تسمين)":"Broiler","إنتاج":"Production","تربية":"Rearing","جدود":"Grand Parents (G.P)","امهات البياض":"Layer Breeder" };
   const fEn    = typeEN[r.f_type] || "Farm";
   const sensNamesEn = ["Sensor One ","Sensor Two ","Sensor Three","Sensor Four ","Sensor Five ","Sensor Six  "];
   const filled = (r.sensors||[]).map((s,i)=>[i+1,fmtV(s?.val??s)]).filter(([,v])=>v!=="");
   const isChem = !!(r.nh3||r.co2||r.hum||r.press);
+  const rateStr = isChem ? "" : fmtV(r.rate);
+  const spStr = fmtV(r.set_point);
 
-  let text = `${fEn} - ${caseData.farm}\n`;
-  text += `House - ${caseData.house} - Age - ${r.age||"â€”"} Day\n`;
+  let text = `${fEn} - ${caseData.farm || ""}\n`;
+  
+  if (caseData.house) {
+    text += `House - ${caseData.house}`;
+    if (r.age) text += ` - Age - ${r.age} Day`;
+    text += "\n";
+  }
+
   text += `${condHeader} :-\n`;
-  filled.forEach(([i,v])=>{ text+=`${sensNamesEn[i-1]} ${arrow} ${v}Â°\n`; });
-  if (r.nh3)   text+=`Sensor (NHÂ³)      ${arrow} ${r.nh3} ppm\n`;
-  if (r.co2)   text+=`Sensor (COÂ²)      ${arrow} ${r.co2} ppm\n`;
+  
+  if (filled.length > 0) {
+    filled.forEach(([i,v])=>{ text+=`${sensNamesEn[i-1]} ${arrow} ${v}°\n`; });
+    if (filled.length >= 3 && rateStr) text+=`Average  Temp  ${arrow} ${rateStr}°\n`;
+  } else if (rateStr) {
+    text+=`Average  Temp  ${arrow} ${rateStr}°\n`;
+  }
+
+  if (r.nh3)   text+=`Sensor (NH³)      ${arrow} ${r.nh3} ppm\n`;
+  if (r.co2)   text+=`Sensor (CO²)      ${arrow} ${r.co2} ppm\n`;
   if (r.hum)   text+=`Humidity Sensor ${arrow} ${r.hum} %\n`;
   if (r.press) text+=`Pressure Sensor ${arrow} ${r.press} Pa\n`;
-  if ((filled.length>=3||(!filled.length&&fmtV(r.rate)))&&!isChem) text+=`Average  Temp  ${arrow} ${fmtV(r.rate)}Â°\n`;
-  if (fmtV(r.set_point)) text+=`Set Point          ${arrow} ${fmtV(r.set_point)}Â°\n`;
-  text+=`Start Time       ${arrow} ${caseData.time}\n`;
-  if (r.duration) text+=`Process Time  ${arrow} ${r.duration}\n\n`;
+
+  if (spStr && !isChem) text+=`Set Point          ${arrow} ${spStr}°\n`;
+  if (caseData.time)    text+=`Start Time       ${arrow} ${caseData.time}\n`;
+  if (r.duration)       text+=`Process Time  ${arrow} ${r.duration}\n\n`;
+  
   return text;
 }
 
-// â”€â”€â”€ Ø³Ø·Ø± Excel (Ù…Ø·Ø§Ø¨Ù‚ Ù„Ù€ get_sheet_line) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── سطر Excel (مطابق لـ get_sheet_line) ─────────────────────────────────────
 export function getSheetRows(caseData) {
   const r = caseData.raw_data || {};
   const now = caseData.date || new Date().toLocaleDateString("en-GB");
-  const typeEN = { "Ù…Ø²Ø±Ø¹Ø© (ØªØ³Ù…ÙŠÙ†)":"Broiler","Ø¥Ù†ØªØ§Ø¬":"Production","ØªØ±Ø¨ÙŠØ©":"Rearing","Ø¬Ø¯ÙˆØ¯":"Grand Parents (G.P)","Ø§Ù…Ù‡Ø§Øª Ø§Ù„Ø¨ÙŠØ§Ø¶":"Layer Breeder" };
+  const typeEN = { "مزرعة (تسمين)":"Broiler","إنتاج":"Production","تربية":"Rearing","جدود":"Grand Parents (G.P)","امهات البياض":"Layer Breeder" };
   const enType = typeEN[r.f_type] || "Farm";
   const sp = parseFloat(r.set_point) || 0;
   const condition = r.condition || "";
-  const isSpecial = ["Ù…Ø´ÙƒÙ„Ø© Ù‡ÙŠØªØ±","ØªÙˆÙ‚Ù Ù…Ø±Ø§ÙˆØ­"].includes(condition);
-  const isLow     = condition === "Ø§Ù†Ø®ÙØ§Ø¶";
+  const isSpecial = ["مشكلة هيتر","توقف مراوح"].includes(condition);
+  const isLow     = condition === "انخفاض";
   const condPfx   = isLow ? "Low " : "High ";
   const filled    = (r.sensors||[]).map((s,i)=>[i+1,fmtV(s?.val??s)]).filter(([,v])=>v!=="");
   const rateStr   = fmtV(r.rate);
@@ -170,28 +195,28 @@ export function getSheetRows(caseData) {
   const rows = [];
 
   if (isSpecial) {
-    const status = condition==="Ù…Ø´ÙƒÙ„Ø© Ù‡ÙŠØªØ±"?"Heater Problem":"Stop Fans";
+    const status = condition==="مشكلة هيتر"?"Heater Problem":"Stop Fans";
     rows.push([now,enType,caseData.farm,caseData.house,r.age||"",status,caseData.time,"",rateStr,"","%",r.duration||""]);
   } else {
-    // Ø­Ø±Ø§Ø±Ø©
+    // حرارة
     if (filled.length===1) {
       const [idx,val]= filled[0]; const diff=hasSp?fmtV(parseFloat(val)-sp):"";
-      rows.push([now,enType,caseData.farm,caseData.house,r.age||"",`${condPfx}Sensor ${idx}`,caseData.time,diff,val,hasSp?String(sp):"","Â°C",r.duration||""]);
+      rows.push([now,enType,caseData.farm,caseData.house,r.age||"",`${condPfx}Sensor ${idx}`,caseData.time,diff,val,hasSp?String(sp):"","°C",r.duration||""]);
     } else if (filled.length===2) {
       const [s1,s2]=filled; const d1=hasSp?fmtV(parseFloat(s1[1])-sp):""; const d2=hasSp?fmtV(parseFloat(s2[1])-sp):"";
-      rows.push([now,enType,caseData.farm,caseData.house,r.age||"",condPfx.trim(),caseData.time,`S${s1[0]}=${d1}\nS${s2[0]}=${d2}`,`S${s1[0]}=${s1[1]}\nS${s2[0]}=${s2[1]}`,hasSp?String(sp):"","Â°C",r.duration||""]);
+      rows.push([now,enType,caseData.farm,caseData.house,r.age||"",condPfx.trim(),caseData.time,`S${s1[0]}=${d1}\nS${s2[0]}=${d2}`,`S${s1[0]}=${s1[1]}\nS${s2[0]}=${s2[1]}`,hasSp?String(sp):"","°C",r.duration||""]);
     } else if (filled.length>=3||rateStr) {
       const diff=hasSp&&rateStr?fmtV(parseFloat(rateStr)-sp):"";
-      rows.push([now,enType,caseData.farm,caseData.house,r.age||"",condPfx.trim(),caseData.time,diff,rateStr,hasSp?String(sp):"","Â°C",r.duration||""]);
+      rows.push([now,enType,caseData.farm,caseData.house,r.age||"",condPfx.trim(),caseData.time,diff,rateStr,hasSp?String(sp):"","°C",r.duration||""]);
     }
-    // ÙƒÙŠÙ…ÙŠØ§Ø¦ÙŠØ©
+    // كيميائية
     const chem = {nh3:["NH3","PPM"],co2:["CO2","PPM"],hum:["Humidity","%"],press:["Pressure","PA"]};
     Object.entries(chem).forEach(([k,[name,unit]])=>{ if(r[k]) rows.push([now,enType,caseData.farm,caseData.house,r.age||"",`${condPfx}${name}`,caseData.time,"",r[k],hasSp?String(sp):"",unit,r.duration||""]); });
   }
   return rows;
 }
 
-// â”€â”€â”€ helper â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── helper ──────────────────────────────────────────────────────────────────
 function fmtV(v) {
   const n = parseFloat(v);
   if (isNaN(n)) return "";

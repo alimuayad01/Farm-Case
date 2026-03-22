@@ -6,7 +6,9 @@ import LoginPage   from "./pages/auth/LoginPage.jsx";
 import Sidebar     from "./components/layout/Sidebar.jsx";
 import ToastContainer from "./components/ui/Toast.jsx";
 
-// â”€â”€â”€ Pages â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+import Header from "./components/layout/Header.jsx";
+
+// ─── Pages ─────────────────────────────────────────────────────────────────
 import AdminDashboard from "./pages/admin/AdminDashboard.jsx";
 import CasePage       from "./pages/app/CasePage.jsx";
 import HistoryPage    from "./pages/app/HistoryPage.jsx";
@@ -20,7 +22,7 @@ export default function App() {
   const [user,       setUser]       = useState(getCurrentUser);
   const [activePage, setActivePage] = useState(null);
 
-  // ØªØ­Ø¯ÙŠØ¯ Ø§Ù„ØµÙØ­Ø© Ø§Ù„Ø§ÙØªØ±Ø§Ø¶ÙŠØ© Ø¨Ù†Ø§Ø¡Ù‹ Ø¹Ù„Ù‰ Ø§Ù„Ø¯ÙˆØ±
+  // تحديد الصفحة الافتراضية بناءً على الدور
   useEffect(() => {
     if (!user) return;
     setActivePage(user.role === "admin" ? "dashboard" : "case");
@@ -29,7 +31,7 @@ export default function App() {
   function handleLogin(u) { setUser(u); }
   function handleLogout()  { setUser(null); setActivePage(null); }
 
-  // â”€â”€â”€ ØºÙŠØ± Ù…Ø³Ø¬Ù‘Ù„ Ø¯Ø®ÙˆÙ„ â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ─── غير مسجّل دخول ─────────────────────────────────────────────────────
   if (!user) return (
     <>
       <LoginPage onLogin={handleLogin} />
@@ -37,7 +39,7 @@ export default function App() {
     </>
   );
 
-  // â”€â”€â”€ Page Renderer â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ─── Page Renderer ───────────────────────────────────────────────────────
   function renderPage() {
     switch (activePage) {
       case "dashboard": return <AdminDashboard user={user} />;
@@ -61,8 +63,11 @@ export default function App() {
         onLogout={handleLogout}
       />
       <div className="main-content">
+        <Header user={user} onNavigate={setActivePage} onLogout={handleLogout} />
         <div className="page-content">
-          {renderPage()}
+          <div key={activePage} className="page-transition">
+            {renderPage()}
+          </div>
         </div>
       </div>
       <ToastContainer />

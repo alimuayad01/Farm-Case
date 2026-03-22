@@ -1,10 +1,10 @@
-// â”€â”€â”€ Ø¯ÙˆØ§Ù„ Ù…Ø³Ø§Ø¹Ø¯Ø© Ø¹Ø§Ù…Ø© â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── دوال مساعدة عامة ────────────────────────────────────────────────────
 
 export function getShiftName() {
   const h = new Date().getHours();
-  if (h >= 7 && h < 15) return "ØµØ¨Ø§Ø­ÙŠ";
-  if (h >= 15 && h < 23) return "Ù…Ø³Ø§Ø¦ÙŠ";
-  return "Ù„ÙŠÙ„ÙŠ";
+  if (h >= 7 && h < 15) return "صباحي";
+  if (h >= 15 && h < 23) return "مسائي";
+  return "ليلي";
 }
 
 export function safeFloat(val) {
@@ -40,7 +40,7 @@ export function isToday(ts) {
          d.getDate() === now.getDate();
 }
 
-export const CONDITIONS_AR = ["Ø§Ù†Ø®ÙØ§Ø¶", "Ø§Ø±ØªÙØ§Ø¹", "Ù…Ø´ÙƒÙ„Ø© Ù‡ÙŠØªØ±", "ØªÙˆÙ‚Ù Ù…Ø±Ø§ÙˆØ­", "Ù…Ø²Ø±Ø¹Ø© ÙƒØ§Ù…Ù„Ø© (Ù…ØªØ¹Ø¯Ø¯)"];
+export const CONDITIONS_AR = ["انخفاض", "ارتفاع", "مشكلة هيتر", "توقف مراوح", "مزرعة كاملة (متعدد)"];
 export const CONDITIONS_EN = ["Low", "High", "Heater Problem", "Fan's Stop", "Whole Farm (Multi)"];
-export const TYPES_AR      = ["Ù…Ø²Ø±Ø¹Ø© (ØªØ³Ù…ÙŠÙ†)", "Ø¥Ù†ØªØ§Ø¬", "ØªØ±Ø¨ÙŠØ©", "Ø¬Ø¯ÙˆØ¯", "Ø§Ù…Ù‡Ø§Øª Ø§Ù„Ø¨ÙŠØ§Ø¶"];
+export const TYPES_AR      = ["مزرعة (تسمين)", "إنتاج", "تربية", "جدود", "امهات البياض"];
 export const TYPES_EN      = ["Broiler", "Production", "Rearing", "Grand Parents", "Layer Breeders"];
