@@ -151,7 +151,7 @@ function AdminMessagesCenter({ users, inbox, sentHistory, onRefresh }) {
                  <div className="flex gap-2">
                     {["info", "warning", "error"].map(t=>(
                        <button key={t} type="button" className={`flex-1 btn btn-sm ${type===t ? (t==='error'?'btn-danger':t==='warning'?'btn-orange':'btn-primary') : 'btn-ghost'}`} onClick={()=>setType(t)}>
-                          {t==='info'?'ℹ️':'t==='warning'?'⚠️':'🚨'} {t}
+                          {t === 'info' ? 'ℹ️' : t === 'warning' ? '⚠️' : '🚨'} {t}
                        </button>
                     ))}
                  </div>
