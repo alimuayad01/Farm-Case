@@ -1,11 +1,59 @@
-// ─── Database configuration (Local vs Cloud) ─────────────────────────
+// ─── Database configuration & Sync Queue ─────────────────────────
 
-// If you want to use a LOCAL server (e.g. Node.js on this PC), 
-// change this to your local IP: "http://192.168.1.50:3000"
-// Default uses Firebase Cloud.
+// getBaseUrl: Returns the API URL (Cloud or Local IP)
 const getBaseUrl = () => {
     return localStorage.getItem("database_url") || "https://farm-case-default-rtdb.asia-southeast1.firebasedatabase.app";
 };
+
+// Internal: Perform the actual network call
+async function performNetworkPut(node, data) {
+  const url = getBaseUrl();
+  const res = await fetch(`${url}/${node}.json`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error(`HTTP Error: ${res.status}`);
+  return true;
+}
+
+// ─── Sync Queue (Offline Support) ──────────────────────────────────────────
+// Keeps track of data that failed to upload to the server.
+const SYNC_QUEUE_KEY = "pending_sync_queue";
+
+function addToSyncQueue(node, data) {
+  const queue = JSON.parse(localStorage.getItem(SYNC_QUEUE_KEY) || "{}");
+  // We use object keys to ensure we only have the "latest" version per node.
+  queue[node] = { data, timestamp: Date.now() };
+  localStorage.setItem(SYNC_QUEUE_KEY, JSON.stringify(queue));
+}
+
+export async function processSyncQueue() {
+  const queue = JSON.parse(localStorage.getItem(SYNC_QUEUE_KEY) || "{}");
+  const nodes = Object.keys(queue);
+  if (nodes.length === 0) return;
+
+  console.log(`🔄 Attempting to sync ${nodes.length} pending items...`);
+  
+  for (const node of nodes) {
+    try {
+      await performNetworkPut(node, queue[node].data);
+      // Success -> Remove from queue
+      const updatedQueue = JSON.parse(localStorage.getItem(SYNC_QUEUE_KEY) || "{}");
+      delete updatedQueue[node];
+      localStorage.setItem(SYNC_QUEUE_KEY, JSON.stringify(updatedQueue));
+      console.log(`✅ Synced: ${node}`);
+    } catch (e) {
+      console.warn(`⏳ Sync failed for ${node}, will retry later.`);
+      break; // Stop and wait for next interval
+    }
+  }
+}
+
+// Start auto-sync interval (every 30 seconds)
+setInterval(processSyncQueue, 30000);
+
+// ─── Data Access API ───────────────────────────────────────────────────────
 
 export async function getCloud(node, defaultVal = null) {
   try {
@@ -23,18 +71,13 @@ export async function getCloud(node, defaultVal = null) {
 
 export async function putCloud(node, data) {
   try {
-    const url = getBaseUrl();
-    await fetch(`${url}/${node}.json`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
-    });
+    await performNetworkPut(node, data);
   } catch (e) {
-    console.warn(`Database save error [${node}]:`, e.message);
+    console.warn(`⚠️ Network unreachable. Adding [${node}] to sync queue.`);
+    addToSyncQueue(node, data);
   }
 }
 
-// ─── Data Management with Local Caching ────────────────────────────────────
 export async function loadData(key, defaultVal = []) {
   // 1. Try Local cache (Fast)
   const local = localStorage.getItem(key);
@@ -47,6 +90,7 @@ export async function loadData(key, defaultVal = []) {
       !(typeof localData === "object" && !Array.isArray(localData) && Object.keys(localData).length === 0)) {
     
     getCloud(key).then(cloud => {
+      // Only update local if cloud is actually reachable and newer
       if (cloud !== null) localStorage.setItem(key, JSON.stringify(cloud));
     });
     return localData;
@@ -63,7 +107,7 @@ export async function loadData(key, defaultVal = []) {
 }
 
 export async function saveData(key, data) {
-  // Sync local
+  // Sync local immediately
   localStorage.setItem(key, JSON.stringify(data));
   // Sync cloud/local server
   await putCloud(key, data);

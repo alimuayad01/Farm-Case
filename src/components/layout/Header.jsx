@@ -6,7 +6,7 @@ import { showToast } from "../ui/Toast.jsx";
 const AVATAR_KEY  = u => `avatar_${u}`;
 const loadAvatar  = u => localStorage.getItem(AVATAR_KEY(u)) || null;
 
-export default function Header({ user, onNavigate, onLogout }) {
+export default function Header({ user, onNavigate, onLogout, onToggleSidebar }) {
   const isAdmin = user?.role === "admin";
   const [avatar, setAvatar] = useState(() => loadAvatar(user?.username));
   const [menuOpen, setMenuOpen] = useState(false);
@@ -74,6 +74,9 @@ export default function Header({ user, onNavigate, onLogout }) {
 
   return (
     <header className="app-header">
+      <button type="button" className="mobile-menu-btn" onClick={onToggleSidebar}>
+        ☰
+      </button>
       <div className="header-spacer"></div>
 
       <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>

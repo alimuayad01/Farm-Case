@@ -12,15 +12,18 @@ import Header from "./components/layout/Header.jsx";
 import AdminDashboard from "./pages/admin/AdminDashboard.jsx";
 import CasePage       from "./pages/app/CasePage.jsx";
 import HistoryPage    from "./pages/app/HistoryPage.jsx";
+import SheetQueuePage  from "./pages/app/SheetQueuePage.jsx";
 import UsersPage      from "./pages/admin/UsersPage.jsx";
 import MessagesPage      from "./pages/admin/MessagesPage.jsx";
 import SettingsPage      from "./pages/admin/SettingsPage.jsx";
+import TemplatesPage      from "./pages/admin/TemplatesPage.jsx";
 import PersonalSettingsPage from "./pages/app/PersonalSettingsPage.jsx";
 import ProfilePage           from "./pages/app/ProfilePage.jsx";
 
 export default function App() {
   const [user,       setUser]       = useState(getCurrentUser);
   const [activePage, setActivePage] = useState(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // تحديد الصفحة الافتراضية بناءً على الدور
   useEffect(() => {
@@ -45,8 +48,10 @@ export default function App() {
       case "dashboard": return <AdminDashboard user={user} />;
       case "case":      return <CasePage       user={user} />;
       case "history":   return <HistoryPage    user={user} />;
+      case "sheet":     return <SheetQueuePage    user={user} />;
       case "users":     return <UsersPage      user={user} />;
       case "messages":  return <MessagesPage   user={user} />;
+      case "templates": return <TemplatesPage   user={user} />;
       case "settings":  return <SettingsPage    user={user} />;
       case "appearance":return <PersonalSettingsPage user={user} />;
       case "profile":   return <ProfilePage           user={user} onUserUpdate={setUser} />;
@@ -56,14 +61,21 @@ export default function App() {
 
   return (
     <div className="app-layout">
+      {sidebarOpen && <div className="sidebar-overlay" onClick={() => setSidebarOpen(false)} />}
       <Sidebar
         user={user}
         activePage={activePage}
-        onNavigate={setActivePage}
+        onNavigate={(p) => { setActivePage(p); setSidebarOpen(false); }}
         onLogout={handleLogout}
+        isOpen={sidebarOpen}
       />
       <div className="main-content">
-        <Header user={user} onNavigate={setActivePage} onLogout={handleLogout} />
+        <Header 
+          user={user} 
+          onNavigate={setActivePage} 
+          onLogout={handleLogout} 
+          onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
+        />
         <div className="page-content">
           <div key={activePage} className="page-transition">
             {renderPage()}

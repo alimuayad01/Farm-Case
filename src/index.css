@@ -60,21 +60,30 @@ body {
   display: grid;
   grid-template-columns: 260px minmax(0, 1fr);
   min-height: 100vh;
-  direction: rtl; /* ضمان اتجاه الصفحة */
+  direction: rtl;
 }
-
 @media (max-width: 900px) {
   .app-layout {
-    display: flex; /* العودة للفليكس للموبايل حيث الـ Sidebar قد يكون في الأعلى أو كقائمة منسدلة مستقبلاً */
-    flex-direction: column;
+    grid-template-columns: 1fr;
   }
   .sidebar {
-    width: 100%;
-    height: auto;
-    min-height: auto;
-    position: relative;
-    border-left: none;
-    border-bottom: 1px solid var(--border);
+    position: fixed;
+    z-index: 2000;
+    left: auto;
+    right: -260px; /* Hidden outside right screen in RTL */
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 4px 0 20px rgba(0,0,0,0.5);
+  }
+  .sidebar.open {
+    transform: translateX(-260px); /* Move back into view in RTL */
+  }
+  .sidebar-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    backdrop-filter: blur(2px);
+    z-index: 1999;
+    animation: fadeIn 0.2s ease;
   }
 }
 
@@ -163,7 +172,23 @@ body {
   align-items: center;
   gap: 8px;
 }
-.btn-logout:hover { background: #c0392b; }
+.mobile-menu-btn {
+  display: none;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  font-size: 1.2rem;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+@media (max-width: 900px) {
+  .mobile-menu-btn { display: flex; }
+}
 
 /* ─── Header ────────────────────────────────────────────────────────────── */
 .app-header {
@@ -409,8 +434,8 @@ body {
 
 .table-row:hover { background: var(--bg-tertiary); }
 .table-row:last-child { border-bottom: none; }
-.table-row.unseen { border-right: 3px solid var(--accent-blue); }
-.table-row.seen   { border-right: 3px solid var(--accent-green); }
+.table-row.unseen { border-right: none; }
+.table-row.seen   { border-right: none; }
 
 /* ─── Buttons ───────────────────────────────────────────────────────────── */
 .btn {
@@ -476,6 +501,18 @@ body {
 .focus-ring:focus-within {
   border-color: var(--accent-blue) !important;
   box-shadow: 0 0 0 3px rgba(59,130,246,.15);
+}
+
+/* Hide Spinners (Arrows) */
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  appearance: none;
+  margin: 0;
+}
+input[type=number] {
+  -moz-appearance: textfield;
+  appearance: textfield;
 }
 
 /* ─── Toasts ────────────────────────────────────────────────────────────── */
