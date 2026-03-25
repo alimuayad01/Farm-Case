@@ -76,19 +76,20 @@ export default function SmartTimeInput({ label, h, m, p, onChange }) {
             border: "1px solid var(--border)", 
             borderRadius: "8px", 
             height: "36px", 
-            padding: "0 10px", 
+            paddingLeft: "34px",
+            paddingRight: "10px", 
             gap: "4px" 
           }}>
           
           <input 
             type="number" 
             min="1" max="12" 
-            placeholder="--" 
+            placeholder="ساعة" 
             value={localH}
             onChange={(e) => handleHourChange(e.target.value)} 
             onBlur={handleBlurH}
             style={{ 
-              width: "32px", 
+              width: "48px", 
               background: "transparent", 
               border: "none", 
               color: "var(--text-primary)", 
@@ -113,12 +114,12 @@ export default function SmartTimeInput({ label, h, m, p, onChange }) {
           <input 
             type="number" 
             min="0" max="59" 
-            placeholder="--" 
+            placeholder="دقيقة" 
             value={localM}
             onChange={(e) => setLocalM(e.target.value)} 
             onBlur={handleBlurM}
             style={{ 
-              width: "32px", 
+              width: "48px", 
               background: "transparent", 
               border: "none", 
               color: "var(--text-primary)", 

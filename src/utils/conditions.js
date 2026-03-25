@@ -83,12 +83,11 @@ function getFormattedAge(age, farmType, lang, t) {
   if (!age) return "";
   const typesToConvert = ["تربية", "إنتاج", "جدود", "امهات البياض"];
   if (typesToConvert.includes(farmType)) {
-    const weeks = (parseFloat(age) / 7).toFixed(1).replace(/\.0$/, "");
     const label = lang === 'ar' ? (t.weekLabel || "اسبوع") : (t.weekLabel || "Week");
-    return `${weeks} ${label}`;
+    return `" ${age} " ${label}`;
   }
   const label = lang === 'ar' ? (t.dayLabel || "يوم") : (t.dayLabel || "Day");
-  return `${age} ${label}`;
+  return `" ${age} " ${label}`;
 }
 
 // ─── بناء النص العربي ────────────────────────────────────────────────────────
@@ -116,7 +115,7 @@ export function buildArabicText(caseData, customTemps = null) {
   text += `${t.houseLabel}  -  " ${caseData.house || ""} "\n`;
   
   const ageStr = getFormattedAge(r.age, r.f_type, 'ar', t);
-  if (ageStr) text += `${t.ageLabel}  -  " ${ageStr} "\n`;
+  if (ageStr) text += `${t.ageLabel}  -  ${ageStr}\n`; // Age outside quotes
   
   text += `${condHeader} :-\n`;
 
@@ -150,9 +149,10 @@ export function buildEnglishText(caseData, customTemps = null) {
   const t = customTemps?.en || FALLBACK_TEMPS.en;
   const arrow = "➡";
 
-  let fTitle = t.farmLabel;
-  if (r.f_type === "تربية") fTitle = t.rearingLabel;
-  else if (r.f_type === "إنتاج") fTitle = t.productionLabel;
+  const fTypeTrimmed = (r.f_type || "").trim();
+  let fTitle = t.farmLabel || "Farm";
+  if (fTypeTrimmed === "تربية" || fTypeTrimmed === "Rearing") fTitle = t.rearingLabel || "Rearing";
+  else if (fTypeTrimmed === "إنتاج" || fTypeTrimmed === "Production") fTitle = t.productionLabel || "Production";
 
   const condition = r.condition || "ارتفاع";
   const condHeader = condition === "انخفاض" ? t.lowLabel : (condition === "ارتفاع" ? t.highLabel : condition);
@@ -165,13 +165,14 @@ export function buildEnglishText(caseData, customTemps = null) {
   const isChem = !!(r.nh3 || r.co2 || r.hum || r.press);
 
   let text = `${fTitle}   -  " ${caseData.farm || ""} "\n`;
-  text += `${t.houseLabel} -  " ${caseData.house || ""} "\n`;
+  if (caseData.house) text += `${t.houseLabel} -  " ${caseData.house} "\n`;
   
   const ageStr = getFormattedAge(r.age, r.f_type, 'en', t);
-  if (ageStr) text += `${t.ageLabel}      -  " ${ageStr} "\n`;
+  if (ageStr) text += `${t.ageLabel}      -  ${ageStr}\n`;
   
   text += `${condHeader} :-\n`;
 
+  // Filter: Ignore empty
   filledSensors.forEach(s => {
     text += `${t.sensorPrefix} ${sensNamesEn[s.id-1] || s.id}   ${arrow} ${s.val}°\n`;
   });
@@ -184,23 +185,36 @@ export function buildEnglishText(caseData, customTemps = null) {
   const avgTemp = fmtV(r.rate);
   const sp = fmtV(r.set_point);
 
-  if (avgTemp && (!isChem || filledSensors.length === 0)) {
+  if (avgTemp && (!isChem || filledSensors.length > 0)) {
     text += `${t.avgTempLabel}    ${arrow} ${avgTemp}°\n`;
   }
 
   if (sp && !isChem) text += `${t.setPointLabel}         ${arrow} ${sp}°\n`;
   if (caseData.time) text += `${t.startTimeLabel}       ${arrow} ${caseData.time}\n`;
-  if (r.duration)    text += `${t.procTimeLabel}   ${arrow} ${r.duration}\n`;
+  
+  let durationText = "";
+  const rawDur = r.duration_en || r.duration || "";
+  if (rawDur) {
+    durationText = rawDur.replace("ساعة", "Hrs.").replace("دقيقة", "Min.").trim();
+  }
+
+  if (durationText) text += `${t.procTimeLabel}   ${arrow} ${durationText}\n`;
 
   text += `\n${t.footer}`;
   return text;
 }
 
-export function getSheetRows(caseData) {
+export const DEFAULT_COL_ORDER = ["date", "farm", "farm_type", "house", "age", "condition", "time", "diff", "rate", "sp", "unit", "duration"];
+
+export function getSheetRows(caseData, typeMapping = null, columnOrder = null) {
   const r = caseData.raw_data || {};
   const now = caseData.date || new Date().toLocaleDateString("en-GB");
-  const typeEN = { "مزرعة (تسمين)":"Broiler","إنتاج":"Production","تربية":"Rearing" };
-  const enType = typeEN[r.f_type] || "Farm";
+  
+  const defaultTypeEN = { "مزرعة (تسمين)":"Broiler","إنتاج":"Production","تربية":"Rearing", "جدود":"Grandparents", "امهات البياض":"Layers Parents" };
+  const typeEN = typeMapping || {};
+  const fTypeTrim = (r.f_type || "").trim();
+  const enType = typeEN[fTypeTrim] || defaultTypeEN[fTypeTrim] || fTypeTrim || "Broiler";
+  
   const sp = parseFloat(r.set_point) || 0;
   const condition = r.condition || "";
   const isSpecial = ["مشكلة هيتر","توقف مراوح"].includes(condition);
@@ -210,30 +224,59 @@ export function getSheetRows(caseData) {
   const rateStr   = fmtV(r.rate);
   const hasSp     = sp > 0;
   
-  // Format age for Excel
   let finalAge = r.age || "";
-  if (["تربية", "إنتاج", "جدود", "امهات البياض"].includes(r.f_type) && r.age) {
-    finalAge = (parseFloat(r.age) / 7).toFixed(1).replace(/\.0$/, "");
+
+  let durationText = "";
+  const rawDur = r.duration_en || r.duration || "";
+  if (rawDur) {
+    durationText = rawDur.replace("ساعة", "Hrs.").replace("دقيقة", "Min.").trim();
   }
 
-  const rows = [];
+  const baseRowObj = {
+    date: now,
+    farm: caseData.farm || "",
+    farm_type: enType,
+    house: caseData.house || "",
+    age: finalAge,
+    time: caseData.time || "",
+    duration: durationText,
+    reason: caseData.reason || ""
+  };
 
+  const createRow = (cond, diff, rate, spStr, unit) => {
+    const obj = { ...baseRowObj, condition: cond || "", diff: diff || "", rate: rate || "", sp: spStr || "", unit: unit || "" };
+    return (columnOrder || DEFAULT_COL_ORDER).map(col => obj[col] !== undefined ? obj[col] : "");
+  };
+
+  const rows = [];
+  
   if (isSpecial) {
-    const status = condition==="مشكلة هيتر"?"Heater Problem":"Stop Fans";
-    rows.push([now,enType,caseData.farm,caseData.house,finalAge,status,caseData.time,"",rateStr,"","%",r.duration||""]);
+    const status = condition==="مشكلة هيتر"?"Problem Heater":"Fans Stop";
+    rows.push(createRow(status, "", rateStr, "", "%"));
   } else {
+    // Normal temp conditions
     if (filled.length===1) {
       const [idx,val]= filled[0]; const diff=hasSp?fmtV(parseFloat(val)-sp):"";
-      rows.push([now,enType,caseData.farm,caseData.house,finalAge,`${condPfx}Sensor ${idx}`,caseData.time,diff,val,hasSp?String(sp):"","°C",r.duration||""]);
+      rows.push(createRow(`${condPfx}Temp Sensor ${idx}`, diff, val, hasSp?String(sp):"", "°C"));
     } else if (filled.length===2) {
       const [s1,s2]=filled; const d1=hasSp?fmtV(parseFloat(s1[1])-sp):""; const d2=hasSp?fmtV(parseFloat(s2[1])-sp):"";
-      rows.push([now,enType,caseData.farm,caseData.house,finalAge,condPfx.trim(),caseData.time,`S${s1[0]}=${d1}\nS${s2[0]}=${d2}`,`S${s1[0]}=${s1[1]}\nS${s2[0]}=${s2[1]}`,hasSp?String(sp):"","°C",r.duration||""]);
+      rows.push(createRow(condPfx+"Temp", `S${s1[0]}=${d1}\nS${s2[0]}=${d2}`, `S${s1[0]}=${s1[1]}\nS${s2[0]}=${s2[1]}`, hasSp?String(sp):"", "°C"));
     } else if (filled.length>=3||rateStr) {
       const diff=hasSp&&rateStr?fmtV(parseFloat(rateStr)-sp):"";
-      rows.push([now,enType,caseData.farm,caseData.house,finalAge,condPfx.trim(),caseData.time,diff,rateStr,hasSp?String(sp):"","°C",r.duration||""]);
+      rows.push(createRow(condPfx+"Temp", diff, rateStr, hasSp?String(sp):"", "°C"));
     }
-    const chem = {nh3:["NH3","PPM"],co2:["CO2","PPM"],hum:["Humidity","%"],press:["Pressure","PA"]};
-    Object.entries(chem).forEach(([k,[name,unit]])=>{ if(r[k]) rows.push([now,enType,caseData.farm,caseData.house,finalAge,`${condPfx}${name}`,caseData.time,"",r[k],hasSp?String(sp):"",unit,r.duration||""]); });
+    
+    // Chemicals/Specific Sensors
+    const chemMapppings = {
+      nh3: ["High NH3", "PPM"],
+      co2: ["High CO2", "PPM"],
+      hum: [ (isLow ? "Low Humidity" : "High Humidity"), "%"],
+      press: ["High Pressure", "PA"]
+    };
+
+    Object.entries(chemMapppings).forEach(([key, [status, unit]]) => {
+      if (r[key]) rows.push(createRow(status, "", r[key], hasSp ? String(sp) : "", unit));
+    });
   }
   return rows;
 }
@@ -243,3 +286,4 @@ function fmtV(v) {
   if (isNaN(n)) return "";
   return n % 1 === 0 ? String(n) : n.toFixed(1).replace(/\.?0+$/, "");
 }
+

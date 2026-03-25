@@ -67,7 +67,7 @@ export default function LoginPage({ onLogin }) {
       <div className="login-card">
         <div className="login-icon">🏡</div>
         <h1 className="login-title">Farm Case</h1>
-        <p className="login-subtitle">نظام متابعة المزارع الإلكتروني</p>
+        <p className="login-subtitle">نظام تشخيص حالات الحظائر</p>
 
         {error && <div className="login-error">⚠️ {error}</div>}
 
@@ -114,7 +114,7 @@ export default function LoginPage({ onLogin }) {
         </form>
 
         <p className="text-xs text-muted" style={{ marginTop: "24px" }}>
-          نظام المتابعة الإلكترونية — قسم البيئة
+          شركة سما كربلاء - قسم المتابعة الالكترونية
         </p>
       </div>
     </div>

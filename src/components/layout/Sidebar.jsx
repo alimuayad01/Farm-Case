@@ -37,8 +37,8 @@ export default function Sidebar({ user, activePage, onNavigate, onLogout, isOpen
       <div className="sidebar-brand">
         <span className="sidebar-brand-icon">🏡</span>
         <div>
-          <div className="sidebar-brand-title">Farm Case</div>
-          <div className="sidebar-brand-sub">{isAdmin ? "لوحة تحكم المدير" : "نظام المتابعة"}</div>
+          <div className="sidebar-brand-title">نظام تشخيص حالات الحظائر</div>
+          <div className="sidebar-brand-sub">شركة سما كربلاء - قسم المتابعة الالكترونية</div>
         </div>
       </div>
 

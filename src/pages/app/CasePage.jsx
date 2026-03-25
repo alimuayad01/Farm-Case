@@ -46,6 +46,10 @@ export default function CasePage({ user }) {
   const [ageSugg, setAgeSugg]         = useState(null);
   const [narrow, setNarrow]           = useState(window.innerWidth < 900);
   const [caseSaved, setCaseSaved]     = useState(false); // tracks if current form was saved
+  const [customTextAr, setCustomTextAr] = useState(null);
+  const [customTextEn, setCustomTextEn] = useState(null);
+  const [previewLang, setPreviewLang]   = useState("ar");
+  const [excelMapping, setExcelMapping] = useState(null);
 
   useEffect(() => {
     const onR = () => setNarrow(window.innerWidth < 900);
@@ -58,6 +62,7 @@ export default function CasePage({ user }) {
     loadData("settings/conditions", null).then(d => setCondTable(d));
     loadData("settings/other_conditions", []).then(d => setOtherConds(Array.isArray(d) ? d : []));
     loadData("settings/general", { allow_emp_farm_type: false }).then(d => setGenSettings(d));
+    loadData("settings/excel_mapping", null).then(d => setExcelMapping(d));
     loadData("templates_config", null).then(d => setTemplates(d));
     const now = new Date(); let h = now.getHours(), m = now.getMinutes(), p = h >= 12 ? "PM" : "AM";
     h = h % 12 || 12; setStartTime({ h: String(h).padStart(2, "0"), m: String(m).padStart(2, "0"), p });
@@ -111,16 +116,16 @@ export default function CasePage({ user }) {
   useEffect(() => {
     const key = `${farm.trim()}-${house}`;
     if (!farm.trim() || lastFillKey.current === key) return;
-    const p = [...history].reverse().find(h => h.farm?.trim() === farm.trim() && (!house || h.house === house));
+    const p = [...history].reverse().find(h => h.farm?.trim() === farm.trim() && h.raw_data?.f_type === farmType && (!house || h.house === house));
     if (p) {
       const r = p.raw_data || {};
       let filled = false;
-      if (r.set_point && !sp) { setSp(String(r.set_point)); filled = true; }
+      // Removed set_point deduction as requested
       if (r.age && ageSugg && !age) { setAge(String(ageSugg)); filled = true; }
       if (filled) showToast("✨ تم الاستنتاج التلقائي للبيانات", "info");
       lastFillKey.current = key;
     }
-  }, [farm, house, history, sp, age, ageSugg]);
+  }, [farm, house, history, sp, age, ageSugg, farmType]);
 
   function buildCase() {
     return {
@@ -132,7 +137,8 @@ export default function CasePage({ user }) {
         sensors: sensors.map(s => ({ val: sf(s)??0 })), rate: sf(rate)||0,
         condition: condition||"انخفاض",
         start_h: startTime.h, start_m: startTime.m, start_p: startTime.p,
-        end_h: endTime.h, end_m: endTime.m, end_p: endTime.p, duration: durText(),
+        end_h: endTime.h, end_m: endTime.m, end_p: endTime.p, 
+        duration: durText(),
         nh3: nh3.trim(), co2: co2.trim(), hum: hum.trim(), press: press.trim(),
         sensor_mode: sMode, special: specialCond||null }
     };
@@ -145,28 +151,35 @@ export default function CasePage({ user }) {
     if (!caseObj) {
       caseObj = buildCase();
       if (isOnline) {
-        try { const upd = [...history, caseObj]; await saveData("history", upd); setHistory(upd); if (!savedFarms.includes(caseObj.farm)) setSavedFarms(p => [...p, caseObj.farm]); }
-        catch { showToast("❌ خطأ بالاتصال", "error"); setSaving(false); return; }
-      } else { addQ(caseObj); setQueueCount(getQ().length); }
+        // Run save in background to avoid copy delay
+        saveData("history", [...history, caseObj])
+          .then(() => {
+            if (!savedFarms.includes(caseObj.farm)) setSavedFarms(p => [...p, caseObj.farm]);
+            setHistory(prev => [...prev, caseObj]);
+          })
+          .catch(() => showToast("❌ خطأ بمزامنة السحاب", "error"));
+      } else { 
+        addQ(caseObj); 
+        setQueueCount(getQ().length); 
+      }
       setLastCase(caseObj); setCaseSaved(true);
     }
     await copyFn(caseObj);
     setSaving(false);
-    reset();
+    // reset(); // Removed reset as requested
   }
 
-  function copyAr()    { saveAndCopy(c => { navigator.clipboard.writeText(buildArabicText(c, templates)); showToast("📱 تم الحفظ + نسخ عربي", "success"); }); }
-  function copyEn()    { saveAndCopy(c => { navigator.clipboard.writeText(buildEnglishText(c, templates)); showToast("📱 Saved + Copied EN", "success"); }); }
+  function copyAr()    { saveAndCopy(c => { navigator.clipboard.writeText(customTextAr !== null ? customTextAr : buildArabicText(c, templates)); showToast("📱 تم الحفظ + نسخ عربي", "success"); }); }
+  function copyEn()    { saveAndCopy(c => { navigator.clipboard.writeText(customTextEn !== null ? customTextEn : buildEnglishText(c, templates)); showToast("📱 Saved + Copied EN", "success"); }); }
   async function copySheet() { 
     await saveAndCopy(async (c) => { 
-      const rows = getSheetRows(c); 
-      if (!rows.length){showToast("لا بيانات","error");return;} 
+      const rows = getSheetRows(c, excelMapping?.typeMapping || excelMapping, excelMapping?.columnOrder); 
+      if (!rows.length){ showToast("⚠️ لا توجد بيانات للتصدير", "error"); return; } 
       navigator.clipboard.writeText(rows.map(x=>x.join("\t")).join("\n")); 
       
-      const history = await loadData("history", []);
-      const updated = history.map(h => (h.timestamp === c.timestamp ? { ...h, sent_to_sheet: true } : h));
-      await saveData("history", updated);
-      setHistory(updated);
+      const upd = history.map(h => (h.timestamp === c.timestamp ? { ...h, sent_to_sheet: true } : h));
+      setHistory(upd);
+      saveData("history", upd).catch(() => showToast("❌ خطأ بمزامنة الشيت", "error"));
       showToast("📊 تم الحفظ + الإضافة لقائمة الشيت اليومية", "success"); 
     }); 
   }
@@ -179,6 +192,15 @@ export default function CasePage({ user }) {
   }
 
   const dur = durText(), durM = durMins(), live = buildCase();
+  const autoTextAr = (farm || house) ? buildArabicText(live, templates) : "...";
+  const autoTextEn = (farm || house) ? buildEnglishText(live, templates) : "...";
+
+  // Reset custom text if form changes significantly (we use a simple stringified dependency)
+  useEffect(() => {
+    setCustomTextAr(null);
+    setCustomTextEn(null);
+  }, [farm, house, age, sp, rate, startTime, endTime, nh3, co2, hum, press, specialCond, JSON.stringify(sensors), sMode, farmType]);
+
   const ALL_SPL = ["مشكلة هيتر", "توقف مراوح", ...otherConds];
 
   const card = { background: "var(--bg-secondary)", border: "1px solid var(--border)", borderRadius: "var(--radius-md)", padding: "16px" };
@@ -217,30 +239,30 @@ export default function CasePage({ user }) {
 
         {/* ══ LEFT: DATA ENTRY ════════════════════════════════════════════════ */}
         <div className="flex flex-col gap-4 lg:col-span-2 h-full overflow-y-auto" style={{ minHeight: 0, paddingRight: "4px" }}>
-          <div style={card}>
-            <div className="flex justify-between items-center mb-4 flex-wrap gap-2">
-              <span className="font-bold text-base">🏡 بيانات المزرعة</span>
-              <div className="flex items-center gap-2">
-                 {(user?.role === "admin" || generalSettings.allow_emp_farm_type) && (
-                   <select value={farmType} onChange={e => setFarmType(e.target.value)}
-                      style={{ padding: "1px 7px", borderRadius: "100px", border: "1px solid var(--border)", background: "var(--bg-tertiary)", color: "var(--text-primary)", fontSize: ".76rem", fontWeight: "700", cursor: "pointer", outline: "none" }}>
-                      <option value="مزرعة (تسمين)">مزرعة (تسمين)</option>
-                      <option value="إنتاج">إنتاج</option>
-                      <option value="تربية">تربية</option>
-                      <option value="جدود">جدود</option>
-                      <option value="امهات البياض">أمهات البياض</option>
-                   </select>
-                 )}
-                {ageSugg && !age && (
-                  <button type="button" onClick={() => setAge(String(ageSugg))}
-                    style={{ padding: "1px 7px", borderRadius: "100px", border: "1px solid #f59e0b", background: "rgba(245,158,11,.1)", color: "#f59e0b", fontSize: ".72rem", fontWeight: "700", cursor: "pointer", display: "flex", alignItems: "center", gap: "2px" }}>
-                    <span>💡</span><span>{ageSugg} اسبوع/يوم</span>
-                  </button>
-                )}
-              </div>
+          {/* Removing wrapping card and letting inputs be direct children/smaller cards */}
+          <div className="flex justify-between items-center px-1 mb-2 mt-2">
+            <span className="font-bold text-base">🏡 بيانات المزرعة</span>
+            <div className="flex items-center gap-2">
+               {(user?.role === "admin" || generalSettings.allow_emp_farm_type) && (
+                 <select value={farmType} onChange={e => setFarmType(e.target.value)}
+                    style={{ padding: "1px 7px", borderRadius: "100px", border: "1px solid var(--border)", background: "var(--bg-tertiary)", color: "var(--text-primary)", fontSize: ".76rem", fontWeight: "700", cursor: "pointer", outline: "none" }}>
+                    <option value="مزرعة (تسمين)">مزرعة (تسمين)</option>
+                    <option value="إنتاج">إنتاج</option>
+                    <option value="تربية">تربية</option>
+                    <option value="جدود">جدود</option>
+                    <option value="امهات البياض">أمهات البياض</option>
+                 </select>
+               )}
+              {ageSugg && !age && (
+                <button type="button" onClick={() => setAge(String(ageSugg))}
+                  style={{ padding: "1px 7px", borderRadius: "100px", border: "1px solid #f59e0b", background: "rgba(245,158,11,.1)", color: "#f59e0b", fontSize: ".72rem", fontWeight: "700", cursor: "pointer", display: "flex", alignItems: "center", gap: "2px" }}>
+                  <span>💡</span><span>{ageSugg} اسبوع/يوم</span>
+                </button>
+              )}
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full">
-              <div style={{ position: "relative" }}>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 w-full">
+              <div style={card} className="relative">
                 <div style={lbl}>رقم المزرعة *</div>
                 <input className="form-input" type="number" inputMode="numeric" placeholder="رقم" value={farm}
                   onChange={e => { setFarm(e.target.value); setFarmSugg(savedFarms.filter(f => f.includes(e.target.value)).slice(0,5)); setShowFDrop(e.target.value.length>0); }}
@@ -257,17 +279,16 @@ export default function CasePage({ user }) {
                   </div>
                 )}
               </div>
-              <div>
+              <div style={card}>
                 <div style={lbl}>الحظيرة *</div>
                 <input className="form-input" list="house-opts" placeholder="1-16" value={house} onChange={e => setHouse(e.target.value)} style={{ padding: "4px 6px", fontSize: ".85rem", height: "32px", fontWeight: "700" }} />
                 <datalist id="house-opts">{HOUSES.map(h => <option key={h} value={h} />)}</datalist>
               </div>
-              <div>
+              <div style={card}>
                 <div style={lbl}>العمر (يوم)</div>
                 <input className="form-input" list="age-opts" placeholder="1-35" value={age} onChange={e => setAge(e.target.value)} style={{ padding: "4px 6px", fontSize: ".85rem", height: "32px", fontWeight: "700" }} />
                 <datalist id="age-opts">{AGES.map(a => <option key={a} value={a} />)}</datalist>
               </div>
-            </div>
           </div>
 
           <div style={card} className="flex flex-col flex-shrink-0">
@@ -291,11 +312,17 @@ export default function CasePage({ user }) {
           </div>
 
           <div style={card} className="flex flex-col flex-shrink-0">
-            <div className="font-bold text-sm md:text-base mb-3">⏰ الوقت</div>
+            <div className="flex justify-between items-center mb-3 w-full">
+              <div className="font-bold text-sm md:text-base">⏰ الوقت</div>
+              {dur && (
+                <div style={{ padding: "3px 8px", background: durM>=40?"rgba(249,115,22,.12)":"rgba(34,197,94,.08)", border: `1px solid ${durM>=40?"#f97316":"#22c55e"}`, borderRadius: "100px", fontSize: ".7rem", fontWeight: "800", color: durM>=40?"#f97316":"#22c55e", display: "flex", alignItems: "center", gap: "4px" }}>
+                  <span>⏳ المدة:</span> <span>{dur}{durM>=40?" ⚠️":""}</span>
+                </div>
+              )}
+            </div>
             <div className="flex gap-4 items-end flex-wrap w-full">
-              <SmartTimeInput label="البداية" {...startTime} onChange={v => setStartTime(p => ({...p,...v}))} />
               <SmartTimeInput label="النهاية" {...endTime}   onChange={v => setEndTime(p => ({...p,...v}))} />
-              {dur && <div style={{ padding: "3px 8px", background: durM>=40?"rgba(249,115,22,.12)":"rgba(34,197,94,.08)", border: `1px solid ${durM>=40?"#f97316":"#22c55e"}`, borderRadius: "6px", fontSize: ".7rem", fontWeight: "800", color: durM>=40?"#f97316":"#22c55e" }}>{dur}{durM>=40?" ⚠️":""}</div>}
+              <SmartTimeInput label="البداية" {...startTime} onChange={v => setStartTime(p => ({...p,...v}))} />
             </div>
           </div>
 
@@ -351,11 +378,37 @@ export default function CasePage({ user }) {
               ))}
             </div>
           </div>
-          <div style={{ ...card, flex: 1, minHeight: 0, overflow: "hidden", background: "#25D36604", borderColor: "#25D36630" }}>
-            <div style={{ fontSize: ".68rem", color: "#25D366", fontWeight: "800", marginBottom: "5px" }}>📱 معاينة واتساب</div>
-            <pre style={{ fontFamily: "var(--font-ar)", fontSize: ".72rem", lineHeight: "1.7", color: "var(--text-secondary)", whiteSpace: "pre-wrap", margin: 0, overflow: "auto", height: "calc(100% - 22px)" }}>
-              {(farm||house) ? buildArabicText(live, templates) : "..."}
-            </pre>
+          <div style={{ ...card, flex: 1, minHeight: 0, overflow: "hidden", background: previewLang==='ar'?"#25D36605":"#3b82f605", borderColor: previewLang==='ar'?"#25D36630":"#3b82f630", display: "flex", flexDirection: "column" }}>
+            <div className="flex justify-between items-center mb-3">
+               <div style={{ fontSize: ".68rem", color: previewLang==='ar'?"#25D366":"#3b82f6", fontWeight: "800" }}>
+                 📱 معاينة واتساب (قابلة للتعديل)
+               </div>
+               <div className="flex gap-1">
+                 <button type="button" onClick={() => setPreviewLang("ar")} style={{ padding: "2px 8px", fontSize: ".65rem", fontWeight: "700", borderRadius: "4px", background: previewLang==="ar"?"#25D36620":"transparent", color: previewLang==="ar"?"#25D366":"var(--text-muted)", border: "none", cursor: "pointer" }}>AR</button>
+                 <button type="button" onClick={() => setPreviewLang("en")} style={{ padding: "2px 8px", fontSize: ".65rem", fontWeight: "700", borderRadius: "4px", background: previewLang==="en"?"#3b82f620":"transparent", color: previewLang==="en"?"#3b82f6":"var(--text-muted)", border: "none", cursor: "pointer" }}>EN</button>
+               </div>
+            </div>
+            
+            {previewLang === 'ar' ? (
+              <textarea
+                value={customTextAr !== null ? customTextAr : autoTextAr}
+                onChange={e => setCustomTextAr(e.target.value)}
+                placeholder="تفاصيل التقرير..."
+                dir="rtl"
+                style={{ flex: 1, width: "100%", fontFamily: "var(--font-ar)", fontSize: ".74rem", lineHeight: "1.7", color: "var(--text-secondary)", background: "transparent", border: "none", resize: "none", outline: "none", margin: 0, padding: 0 }}
+              />
+            ) : (
+              <textarea
+                value={customTextEn !== null ? customTextEn : autoTextEn}
+                onChange={e => setCustomTextEn(e.target.value)}
+                placeholder="Report details..."
+                dir="ltr"
+                style={{ flex: 1, width: "100%", fontFamily: "var(--font-en), var(--font-ar)", fontSize: ".74rem", lineHeight: "1.7", color: "var(--text-secondary)", background: "transparent", border: "none", resize: "none", outline: "none", margin: 0, padding: 0, textAlign: "left" }}
+              />
+            )}
+            <div style={{ fontSize: ".6rem", color: "var(--text-muted)", textAlign: "center", marginTop: "4px", opacity: .7 }}>
+              يمكنك التعديل اليدوي على النص أعلاه قبل النسخ
+            </div>
           </div>
         </div>
       </form>

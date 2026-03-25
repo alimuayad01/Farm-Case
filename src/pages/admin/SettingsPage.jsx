@@ -136,13 +136,13 @@ export default function SettingsPage({ user }) {
         <h3 className="font-bold mb-4">🌡️ حدود الإنذار (جدول شروط التسمين)</h3>
         <table className="w-full text-right" style={{ borderCollapse:"collapse" }}>
           <thead>
-            <tr className="table-header-row" style={{ gridTemplateColumns: "1fr 1fr 1.5fr 1.5fr 1.5fr 1.5fr 1.5fr 50px", display:"grid" }}>
-               <th>من يوم</th><th>إلى يوم</th><th>🌡️ انخفاض</th><th>🌡️ ارتفاع</th><th>💧 رطوبة↓</th><th>💧 رطوبة↑</th><th>💨 CO2</th><th></th>
+            <tr className="table-header-row" style={{ gridTemplateColumns: "0.8fr 0.8fr 1.2fr 1.2fr 1.2fr 1.2fr 1.2fr 1.2fr 1.2fr 40px", display:"grid" }}>
+               <th>من يوم</th><th>إلى يوم</th><th>🌡️ انخفاض</th><th>🌡️ ارتفاع</th><th>💧 رطوبة↓</th><th>💧 رطوبة↑</th><th>💨 CO2</th><th>🧪 NH3</th><th>⚖️ ضغط</th><th></th>
             </tr>
           </thead>
           <tbody>
             {rows.map((row, i) => (
-              <tr key={i} className="table-row" style={{ gridTemplateColumns: "1fr 1fr 1.5fr 1.5fr 1.5fr 1.5fr 1.5fr 50px", display:"grid" }}>
+              <tr key={i} className="table-row" style={{ gridTemplateColumns: "0.8fr 0.8fr 1.2fr 1.2fr 1.2fr 1.2fr 1.2fr 1.2fr 1.2fr 40px", display:"grid" }}>
                 <td><input className="form-input text-sm p-1" type="number" value={row.ageFrom} onChange={e=>updateCell(i,"ageFrom",e.target.value)} /></td>
                 <td><input className="form-input text-sm p-1" type="number" value={row.ageTo} onChange={e=>updateCell(i,"ageTo",e.target.value)} /></td>
                 <td><input className="form-input text-sm p-1 text-blue" type="number" step="0.5" value={row.lowTemp??""} placeholder="—" onChange={e=>updateCell(i,"lowTemp",e.target.value)} /></td>
@@ -150,6 +150,8 @@ export default function SettingsPage({ user }) {
                 <td><input className="form-input text-sm p-1 text-green" type="number" step="1" value={row.lowRH??""} placeholder="—" onChange={e=>updateCell(i,"lowRH",e.target.value)} /></td>
                 <td><input className="form-input text-sm p-1 text-orange" type="number" step="1" value={row.highRH??""} placeholder="—" onChange={e=>updateCell(i,"highRH",e.target.value)} /></td>
                 <td><input className="form-input text-sm p-1 text-purple" type="number" step="100" value={row.co2??""} placeholder="—" onChange={e=>updateCell(i,"co2",e.target.value)} /></td>
+                <td><input className="form-input text-sm p-1" style={{ color: "#a855f7" }} type="number" step="1" value={row.nh3??""} placeholder="—" onChange={e=>updateCell(i,"nh3",e.target.value)} /></td>
+                <td><input className="form-input text-sm p-1" style={{ color: "#10b981" }} type="number" step="1" value={row.press??""} placeholder="—" onChange={e=>updateCell(i,"press",e.target.value)} /></td>
                 <td className="flex items-center justify-center">
                    <button className="text-muted" style={{ background:"none", border:"none", cursor:"pointer" }} onClick={()=>{
                       if(rows.length > 1) {
@@ -165,7 +167,7 @@ export default function SettingsPage({ user }) {
           const t = {...tables};
           const last = rows[rows.length-1];
           const start = last ? last.ageTo+1 : 0;
-          t[active] = [...rows, { ageFrom:start, ageTo:start+5, lowTemp:null, highTemp:1, lowRH:50, highRH:null, co2:null }];
+          t[active] = [...rows, { ageFrom:start, ageTo:start+5, lowTemp:null, highTemp:1, lowRH:50, highRH:null, co2:null, nh3:null, press:null }];
           setTables(t);
         }}>➕ إضافة فئة عمرية جديدة</button>
       </div>

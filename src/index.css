@@ -712,3 +712,8 @@ input[type=number] {
 .text-blue    { color: var(--accent-blue); }
 .text-red     { color: var(--accent-red); }
 .overflow-y-auto { overflow-y: auto; }
+
+.bg-primary { background-color: var(--bg-primary); }
+.text-primary { color: var(--text-primary); }
+.outline-none { outline: none; }
+.focus\:border-accent-blue:focus { border-color: var(--accent-blue); box-shadow: 0 0 0 3px rgba(59,130,246,.15); }

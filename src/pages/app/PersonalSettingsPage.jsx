@@ -118,7 +118,7 @@ export default function PersonalSettingsPage() {
             {FONTS.map(f => (
               <button key={f} type="button" onClick={() => update("fontAr", f)}
                 style={{ padding:"12px 10px", borderRadius:"8px", border:`1.5px solid ${prefs.fontAr===f?"var(--accent-blue)":"var(--border)"}`, background:prefs.fontAr===f?"rgba(59,130,246,.12)":"var(--bg-tertiary)", color:prefs.fontAr===f?"var(--accent-blue)":"var(--text-muted)", fontFamily:`"${f}", Tajawal, sans-serif`, fontWeight:"700", cursor:"pointer", transition:"all .2s", fontSize:".88rem" }}>
-                نظام متابعة المزارع — {f}
+                نظام تشخيص حالات الحظائر — {f}
               </button>
             ))}
           </div>

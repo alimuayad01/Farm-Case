@@ -10,6 +10,7 @@ const DEFAULT_TEMPLATES = {
     houseLabel: "حظيرة",
     ageLabel: "العمــر",
     dayLabel: "يوم",
+    weekLabel: "اسبوع",
     highLabel: "ارتفاع في",
     lowLabel: "انخفاض في",
     avgTempLabel: "معدل درجة الحرارة",
@@ -25,6 +26,7 @@ const DEFAULT_TEMPLATES = {
     houseLabel: "House",
     ageLabel: "Age",
     dayLabel: "Day",
+    weekLabel: "Week",
     highLabel: "Gradual High",
     lowLabel: "Gradual Low",
     sensorPrefix: "Sensor",
@@ -114,31 +116,44 @@ export default function TemplatesPage() {
                </div>
             </div>
 
-            <div className="flex flex-col gap-4">
-               <h3 className="font-bold border-bottom pb-2 mb-2">📊 البيانات والظروف</h3>
-               <div className="grid grid-cols-2 gap-2">
-                  <div className="form-group">
-                     <label className="form-label">العمر</label>
-                     <input className="form-input" value={current.ageLabel} onChange={e=>updateField('ageLabel', e.target.value)} />
-                  </div>
-                  <div className="form-group">
-                     <label className="form-label">الوحدة (يوم)</label>
-                     <input className="form-input" value={current.dayLabel} onChange={e=>updateField('dayLabel', e.target.value)} />
-                  </div>
-               </div>
-               <div className="form-group">
-                  <label className="form-label">عنوان الارتفاع</label>
-                  <input className="form-input" value={current.highLabel} onChange={e=>updateField('highLabel', e.target.value)} />
-               </div>
-               <div className="form-group">
-                  <label className="form-label">معدل الحرارة</label>
-                  <input className="form-input" value={current.avgTempLabel} onChange={e=>updateField('avgTempLabel', e.target.value)} />
-               </div>
-               <div className="form-group">
-                  <label className="form-label">السيت بوينت</label>
-                  <input className="form-input" value={current.setPointLabel} onChange={e=>updateField('setPointLabel', e.target.value)} />
-               </div>
-            </div>
+             <div className="flex flex-col gap-4">
+                <h3 className="font-bold border-bottom pb-2 mb-2">📊 البيانات والظروف</h3>
+                <div className="grid grid-cols-2 gap-2">
+                   <div className="form-group">
+                      <label className="form-label">العمر</label>
+                      <input className="form-input" value={current.ageLabel} onChange={e=>updateField('ageLabel', e.target.value)} />
+                   </div>
+                   <div className="form-group"></div>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                   <div className="form-group">
+                      <label className="form-label">الوحدة (يوم)</label>
+                      <input className="form-input" value={current.dayLabel} onChange={e=>updateField('dayLabel', e.target.value)} />
+                   </div>
+                   <div className="form-group">
+                      <label className="form-label">الوحدة (اسبوع)</label>
+                      <input className="form-input" value={current.weekLabel} onChange={e=>updateField('weekLabel', e.target.value)} />
+                   </div>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                   <div className="form-group">
+                      <label className="form-label">عنوان الارتفاع</label>
+                      <input className="form-input" value={current.highLabel} onChange={e=>updateField('highLabel', e.target.value)} />
+                   </div>
+                   <div className="form-group">
+                      <label className="form-label">عنوان الانخفاض</label>
+                      <input className="form-input" value={current.lowLabel} onChange={e=>updateField('lowLabel', e.target.value)} />
+                   </div>
+                </div>
+                <div className="form-group">
+                   <label className="form-label">معدل الحرارة</label>
+                   <input className="form-input" value={current.avgTempLabel} onChange={e=>updateField('avgTempLabel', e.target.value)} />
+                </div>
+                <div className="form-group">
+                   <label className="form-label">السيت بوينت</label>
+                   <input className="form-input" value={current.setPointLabel} onChange={e=>updateField('setPointLabel', e.target.value)} />
+                </div>
+             </div>
 
             <div className="flex flex-col gap-4">
                <h3 className="font-bold border-bottom pb-2 mb-2">🕒 التوقيتات</h3>
@@ -150,13 +165,33 @@ export default function TemplatesPage() {
                   <label className="form-label">مدة المعالجة</label>
                   <input className="form-input" value={current.procTimeLabel} onChange={e=>updateField('procTimeLabel', e.target.value)} />
                </div>
+
+               <h3 className="font-bold border-bottom pb-2 mb-2 mt-2">🧪 حساسات أخرى (EN)</h3>
+               <div className="grid grid-cols-2 gap-2">
+                 <div className="form-group">
+                    <label className="form-label">تسمية NH3</label>
+                    <input className="form-input text-xs" value={current.nh3Label || ""} onChange={e=>updateField('nh3Label', e.target.value)} />
+                 </div>
+                 <div className="form-group">
+                    <label className="form-label">تسمية CO2</label>
+                    <input className="form-input text-xs" value={current.co2Label || ""} onChange={e=>updateField('co2Label', e.target.value)} />
+                 </div>
+                 <div className="form-group">
+                    <label className="form-label">تسمية الرطوبة</label>
+                    <input className="form-input text-xs" value={current.humLabel || ""} onChange={e=>updateField('humLabel', e.target.value)} />
+                 </div>
+                 <div className="form-group">
+                    <label className="form-label">تسمية الضغط</label>
+                    <input className="form-input text-xs" value={current.pressLabel || ""} onChange={e=>updateField('pressLabel', e.target.value)} />
+                 </div>
+               </div>
             </div>
 
             <div className="flex flex-col gap-4">
                <h3 className="font-bold border-bottom pb-2 mb-2">📝 الخاتمة (Footer)</h3>
                <div className="form-group">
                   <label className="form-label">نص التذييل والمنشن</label>
-                  <textarea className="form-input" rows="4" value={current.footer} onChange={e=>updateField('footer', e.target.value)} />
+                  <textarea className="form-input" rows="6" value={current.footer} onChange={e=>updateField('footer', e.target.value)} />
                </div>
             </div>
          </div>
