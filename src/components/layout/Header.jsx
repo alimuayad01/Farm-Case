@@ -6,7 +6,7 @@ import { showToast } from "../ui/Toast.jsx";
 const AVATAR_KEY  = u => `avatar_${u}`;
 const loadAvatar  = u => localStorage.getItem(AVATAR_KEY(u)) || null;
 
-export default function Header({ user, onNavigate, onLogout, onToggleSidebar }) {
+export default function Header({ user, onNavigate, onLogout, onToggleSidebar, onToggleCollapse, isCollapsed }) {
   const isAdmin = user?.role === "admin";
   const [avatar, setAvatar] = useState(() => loadAvatar(user?.username));
   const [menuOpen, setMenuOpen] = useState(false);
@@ -79,8 +79,26 @@ export default function Header({ user, onNavigate, onLogout, onToggleSidebar }) 
       </button>
       <div className="header-spacer"></div>
 
-      <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
         
+        {/* ── Sidebar Toggle ────────────────────────────────────────────────── */}
+        <button type="button" 
+          onClick={onToggleCollapse}
+          title={isCollapsed ? "إظهار الشريط الجانبي" : "إخفاء الشريط الجانبي"}
+          className="hide-on-mobile"
+          style={{ background: "transparent", color: "var(--text-muted)", border: "1px solid var(--border)", height: "40px", width: "40px", borderRadius: "100px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", fontSize: "1.2rem", transition: "all .2s" }}>
+          {isCollapsed ? "▶" : "◀"}
+        </button>
+
+        {/* ── Popup Mode ───────────────────────────────────────────────────── */}
+        <button type="button" 
+          onClick={() => window.open(window.location.origin + window.location.pathname + "?popup=true", "FarmCasePopup", "width=480,height=850,popup=yes,left=50,top=50")}
+          title="فتح في نافذة منبثقة مستقلة"
+          style={{ background: "rgba(59,130,246,0.1)", color: "#3b82f6", border: "1px solid rgba(59,130,246,0.3)", height: "40px", borderRadius: "100px", padding: "0 12px", display: "flex", alignItems: "center", gap: "5px", cursor: "pointer", fontSize: ".72rem", fontWeight: "800" }}>
+          <span style={{ fontSize: "1.1rem" }}>🪟</span>
+          <span className="hide-on-mobile">نافذة مصغرة</span>
+        </button>
+
         {/* ── Notifications ─────────────────────────────────────────────────── */}
         <div ref={notifRef} style={{ position: "relative" }}>
           <button type="button" 

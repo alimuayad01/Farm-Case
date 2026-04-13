@@ -24,6 +24,9 @@ export default function App() {
   const [user,       setUser]       = useState(getCurrentUser);
   const [activePage, setActivePage] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  
+  const isPopup = new URLSearchParams(window.location.search).get("popup") === "true";
 
   // تحديد الصفحة الافتراضية بناءً على الدور
   useEffect(() => {
@@ -41,6 +44,18 @@ export default function App() {
       <ToastContainer />
     </>
   );
+
+  // ─── وضع النافذة المنبثقة ────────────────────────────────────────────────
+  if (isPopup) {
+    return (
+      <div style={{ background: "var(--bg-primary)", position: "fixed", top: 0, left: 0, right: 0, bottom: 0, height: "100vh", width: "100vw", overflowY: "auto", overflowX: "hidden" }}>
+        <div style={{ padding: "8px", paddingBottom: "100px", minHeight: "100%" }}>
+          <CasePage user={user} isPopup={true} />
+        </div>
+        <ToastContainer />
+      </div>
+    );
+  }
 
   // ─── Page Renderer ───────────────────────────────────────────────────────
   function renderPage() {
@@ -62,19 +77,25 @@ export default function App() {
   return (
     <div className="app-layout">
       {sidebarOpen && <div className="sidebar-overlay" onClick={() => setSidebarOpen(false)} />}
-      <Sidebar
-        user={user}
-        activePage={activePage}
-        onNavigate={(p) => { setActivePage(p); setSidebarOpen(false); }}
-        onLogout={handleLogout}
-        isOpen={sidebarOpen}
-      />
-      <div className="main-content">
+      
+      {!sidebarCollapsed && (
+        <Sidebar
+          user={user}
+          activePage={activePage}
+          onNavigate={(p) => { setActivePage(p); setSidebarOpen(false); }}
+          onLogout={handleLogout}
+          isOpen={sidebarOpen}
+        />
+      )}
+      
+      <div className="main-content" style={{ width: sidebarCollapsed ? "100%" : undefined }}>
         <Header 
           user={user} 
           onNavigate={setActivePage} 
           onLogout={handleLogout} 
           onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
+          onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
+          isCollapsed={sidebarCollapsed}
         />
         <div className="page-content">
           <div key={activePage} className="page-transition">

@@ -339,10 +339,9 @@ export default function AdminDashboard({ user }) {
         <select className="form-select" style={{ width: "auto", padding: "4px 8px", fontSize: ".8rem", height: "30px" }}
           value={shiftFilter} onChange={e => setShiftFilter(e.target.value)}>
           <option value="الكل">كل الشفتات</option>
-          <option value="A">شفت A</option>
-          <option value="B">شفت B</option>
-          <option value="C">شفت C</option>
-          <option value="D">شفت D</option>
+          <option value="صباحي">شفت صباحي</option>
+          <option value="مسائي">شفت مسائي</option>
+          <option value="ليلي">شفت ليلي</option>
         </select>
 
         {/* Type Filter */}

@@ -84,7 +84,7 @@ export default function SmartTimeInput({ label, h, m, p, onChange }) {
           <input 
             type="number" 
             min="1" max="12" 
-            placeholder="ساعة" 
+            placeholder="--" 
             value={localH}
             onChange={(e) => handleHourChange(e.target.value)} 
             onBlur={handleBlurH}
@@ -114,7 +114,7 @@ export default function SmartTimeInput({ label, h, m, p, onChange }) {
           <input 
             type="number" 
             min="0" max="59" 
-            placeholder="دقيقة" 
+            placeholder="--" 
             value={localM}
             onChange={(e) => setLocalM(e.target.value)} 
             onBlur={handleBlurM}

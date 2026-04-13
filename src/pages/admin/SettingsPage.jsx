@@ -21,7 +21,7 @@ export default function SettingsPage({ user }) {
 
     Promise.all([
       loadData("settings/conditions", null),
-      loadData("settings/general", { allow_emp_farm_type: false })
+      loadData("settings/general", { allow_emp_farm_type: false, shifts: { morningStart: 7, eveningStart: 15, nightStart: 23 } })
     ]).then(([d, g]) => {
       setTables(d || { [active]: JSON.parse(JSON.stringify(DEFAULT_BROILER_TABLE)) });
       setGeneralSettings(g);
@@ -128,6 +128,32 @@ export default function SettingsPage({ user }) {
                 checked={generalSettings.allow_emp_farm_type}
                 onChange={(e) => setGeneralSettings({ ...generalSettings, allow_emp_farm_type: e.target.checked })} />
            </div>
+        </div>
+
+        {/* Shift Timings */}
+        <div className="card lg:col-span-2">
+          <h3 className="font-bold mb-3">🕒 أوقات الشفتات (ساعة البداية)</h3>
+          <div className="grid grid-cols-3 gap-4">
+            <div>
+              <label className="text-sm font-bold block mb-1">الصباحي</label>
+              <select className="form-select text-sm p-1" value={generalSettings.shifts?.morningStart ?? 7} onChange={e => setGeneralSettings({...generalSettings, shifts: {...(generalSettings.shifts||{}), morningStart: parseInt(e.target.value)}})}>
+                {Array.from({length:24}).map((_,i)=><option key={i} value={i}>{i}:00</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="text-sm font-bold block mb-1">المسائي</label>
+              <select className="form-select text-sm p-1" value={generalSettings.shifts?.eveningStart ?? 15} onChange={e => setGeneralSettings({...generalSettings, shifts: {...(generalSettings.shifts||{}), eveningStart: parseInt(e.target.value)}})}>
+                {Array.from({length:24}).map((_,i)=><option key={i} value={i}>{i}:00</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="text-sm font-bold block mb-1">الليلي</label>
+              <select className="form-select text-sm p-1" value={generalSettings.shifts?.nightStart ?? 23} onChange={e => setGeneralSettings({...generalSettings, shifts: {...(generalSettings.shifts||{}), nightStart: parseInt(e.target.value)}})}>
+                {Array.from({length:24}).map((_,i)=><option key={i} value={i}>{i}:00</option>)}
+              </select>
+            </div>
+          </div>
+          <div className="text-xs mt-2 text-muted">* ملاحظة: نهاية كل شفت هي بداية الشفت الذي يليه وتلقائياً النظام سيرتبها لك.</div>
         </div>
       </div>
 

@@ -4,7 +4,7 @@ import { sf, fv } from "../../utils/utils.js";
 /* ─── SmartTempInput ───────────────────────────────────────────────────────────
    Keyboard-controlled. After 2 integer digits, auto-inserts "." and waits for
    one decimal digit. Format: [-]XX.X  (max). Arrow keys & scroll wheel work. */
-export default function SmartTempInput({ value, onChange, step = 0.1, placeholder = "——.—", color, disabled }) {
+export default function SmartTempInput({ value, onChange, step = 0.1, placeholder = "--", color, disabled }) {
   const ref = useRef();
   const str = String(value ?? "");
   const isNeg  = str.startsWith("-");

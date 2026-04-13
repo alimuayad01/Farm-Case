@@ -79,15 +79,32 @@ const FALLBACK_TEMPS = {
 };
 
 // ─── Helper for Age Conversion ───────────────────────────────────────────────
-function getFormattedAge(age, farmType, lang, t) {
+// mode: 'whatsapp' (weeks only, no remainder) | 'excel' (rounded weeks) | default (weeks+days)
+function getFormattedAge(age, farmType, lang, t, mode = 'whatsapp') {
   if (!age) return "";
-  const typesToConvert = ["تربية", "إنتاج", "جدود", "امهات البياض"];
-  if (typesToConvert.includes(farmType)) {
-    const label = lang === 'ar' ? (t.weekLabel || "اسبوع") : (t.weekLabel || "Week");
-    return `" ${age} " ${label}`;
+  const numAge = parseInt(age, 10);
+  if (isNaN(numAge)) return "";
+
+  const typesToConvert = ["تربية", "إنتاج", "جدود", "امهات البياض", "Rearing", "Production", "Grandparents", "Layers Parents"];
+  const fTypeTrim = (farmType || "").trim();
+  
+  if (typesToConvert.includes(fTypeTrim)) {
+    const wLabel = lang === 'ar' ? (t.weekLabel || "اسبوع") : (t.weekLabel || "Week");
+
+    if (mode === 'excel') {
+      // Excel: round to nearest whole week
+      const weeks = Math.round(numAge / 7);
+      return `${weeks}`;
+    }
+
+    // WhatsApp: weeks only (floor), ignore remaining days
+    const w = Math.floor(numAge / 7);
+    if (w > 0) return `" ${w} " ${wLabel}`;
+    return `" 0 " ${wLabel}`;
   }
+  
   const label = lang === 'ar' ? (t.dayLabel || "يوم") : (t.dayLabel || "Day");
-  return `" ${age} " ${label}`;
+  return `" ${numAge} " ${label}`;
 }
 
 // ─── بناء النص العربي ────────────────────────────────────────────────────────
@@ -119,14 +136,21 @@ export function buildArabicText(caseData, customTemps = null) {
   
   text += `${condHeader} :-\n`;
 
-  if (filledSensors.length > 0 && filledSensors.length <= 2) {
-    const names = ["الاول", "الثاني", "الثالث", "الرابع", "الخامس", "السادس"];
+  if (filledSensors.length > 0) {
+    const sensorNamesAr = [
+      "الحــــــســـــاس الاول",
+      "الحـــســـاس الثـانــي",
+      "الحـــســــاس الثـالـث",
+      "الحــســــاس الـــرابــع",
+      "الحــســاس الخامس",
+      "الحــسـاس السادس"
+    ];
     filledSensors.forEach(s => {
-      text += `حساس ${names[s.id-1] || s.id} ${arrow} °${s.val}\n`;
+      text += `${sensorNamesAr[s.id-1] || "الحساس " + s.id} ${arrow} °${s.val}\n`;
     });
   }
 
-  if (avgTemp && (!isChem || filledSensors.length > 2)) {
+  if (avgTemp && (!isChem && filledSensors.length !== 1 && filledSensors.length !== 2)) {
     text += `${t.avgTempLabel} ${arrow} °${avgTemp}\n`;
   }
 
@@ -139,7 +163,9 @@ export function buildArabicText(caseData, customTemps = null) {
   if (caseData.time) text += `${t.startTimeLabel} ${arrow} ${caseData.time}\n`;
   if (r.duration)    text += `${t.procTimeLabel} ${arrow} ${r.duration}\n`;
 
-  text += `\n${t.footer}`;
+  if (r.dur_mins >= 40) {
+    text += `\n${t.footer}`;
+  }
   return text;
 }
 
@@ -172,22 +198,23 @@ export function buildEnglishText(caseData, customTemps = null) {
   
   text += `${condHeader} :-\n`;
 
-  // Filter: Ignore empty
-  filledSensors.forEach(s => {
-    text += `${t.sensorPrefix} ${sensNamesEn[s.id-1] || s.id}   ${arrow} ${s.val}°\n`;
-  });
+  if (filledSensors.length > 0) {
+    filledSensors.forEach(s => {
+      text += `${t.sensorPrefix} ${sensNamesEn[s.id-1] || s.id}   ${arrow} ${s.val}°\n`;
+    });
+  }
+
+  const avgTemp = fmtV(r.rate);
+  const sp = fmtV(r.set_point);
+
+  if (avgTemp && (!isChem && filledSensors.length !== 1 && filledSensors.length !== 2)) {
+    text += `${t.avgTempLabel}    ${arrow} ${avgTemp}°\n`;
+  }
 
   if (r.nh3)   text += `${t.nh3Label} ${arrow} ${r.nh3} ppm\n`;
   if (r.co2)   text += `${t.co2Label} ${arrow} ${r.co2} ppm\n`;
   if (r.hum)   text += `${t.humLabel} ${arrow} ${r.hum} %\n`;
   if (r.press) text += `${t.pressLabel} ${arrow} ${r.press} Pa\n`;
-
-  const avgTemp = fmtV(r.rate);
-  const sp = fmtV(r.set_point);
-
-  if (avgTemp && (!isChem || filledSensors.length > 0)) {
-    text += `${t.avgTempLabel}    ${arrow} ${avgTemp}°\n`;
-  }
 
   if (sp && !isChem) text += `${t.setPointLabel}         ${arrow} ${sp}°\n`;
   if (caseData.time) text += `${t.startTimeLabel}       ${arrow} ${caseData.time}\n`;
@@ -200,7 +227,9 @@ export function buildEnglishText(caseData, customTemps = null) {
 
   if (durationText) text += `${t.procTimeLabel}   ${arrow} ${durationText}\n`;
 
-  text += `\n${t.footer}`;
+  if (r.dur_mins >= 40) {
+    text += `\n${t.footer}`;
+  }
   return text;
 }
 
@@ -224,7 +253,11 @@ export function getSheetRows(caseData, typeMapping = null, columnOrder = null) {
   const rateStr   = fmtV(r.rate);
   const hasSp     = sp > 0;
   
-  let finalAge = r.age || "";
+  // Use rounded weeks for rearing/production/grands in Excel, days otherwise
+  const WEEK_TYPES = ["تربية","إنتاج","جدود","امهات البياض"];
+  let finalAge = WEEK_TYPES.includes(fTypeTrim) && r.age
+    ? String(Math.round(parseInt(r.age) / 7))
+    : (r.age || "");
 
   let durationText = "";
   const rawDur = r.duration_en || r.duration || "";
@@ -249,32 +282,52 @@ export function getSheetRows(caseData, typeMapping = null, columnOrder = null) {
   };
 
   const rows = [];
-  
+
   if (isSpecial) {
     const status = condition==="مشكلة هيتر"?"Problem Heater":"Fans Stop";
     rows.push(createRow(status, "", rateStr, "", "%"));
-  } else {
-    // Normal temp conditions
-    if (filled.length===1) {
-      const [idx,val]= filled[0]; const diff=hasSp?fmtV(parseFloat(val)-sp):"";
-      rows.push(createRow(`${condPfx}Temp Sensor ${idx}`, diff, val, hasSp?String(sp):"", "°C"));
-    } else if (filled.length===2) {
-      const [s1,s2]=filled; const d1=hasSp?fmtV(parseFloat(s1[1])-sp):""; const d2=hasSp?fmtV(parseFloat(s2[1])-sp):"";
-      rows.push(createRow(condPfx+"Temp", `S${s1[0]}=${d1}\nS${s2[0]}=${d2}`, `S${s1[0]}=${s1[1]}\nS${s2[0]}=${s2[1]}`, hasSp?String(sp):"", "°C"));
-    } else if (filled.length>=3||rateStr) {
-      const diff=hasSp&&rateStr?fmtV(parseFloat(rateStr)-sp):"";
-      rows.push(createRow(condPfx+"Temp", diff, rateStr, hasSp?String(sp):"", "°C"));
+  } else if (filled.length > 0 || rateStr) {
+    // Compute the effective value to determine High/Low
+    const sensVals = filled.map(([,v]) => parseFloat(v)).filter(v => !isNaN(v));
+    const sensAvg  = sensVals.length > 0 ? sensVals.reduce((a,b) => a+b, 0) / sensVals.length : null;
+    const effectiveVal = rateStr ? parseFloat(rateStr) : sensAvg;
+
+    // Determine High/Low prefix from actual value vs setpoint
+    let resolvedPfx = condPfx; // fallback
+    if (effectiveVal !== null && sp > 0) {
+      resolvedPfx = effectiveVal > sp ? "High " : effectiveVal < sp ? "Low " : "High ";
     }
-    
-    // Chemicals/Specific Sensors
-    const chemMapppings = {
-      nh3: ["High NH3", "PPM"],
-      co2: ["High CO2", "PPM"],
-      hum: [ (isLow ? "Low Humidity" : "High Humidity"), "%"],
+
+    if (filled.length === 1) {
+      const [idx, val] = filled[0];
+      const diff = hasSp ? fmtV(parseFloat(val) - sp) : "";
+      rows.push(createRow(`${resolvedPfx}Temp Sensor ${idx}`, diff, val, hasSp ? String(sp) : "", "°C"));
+
+    } else if (filled.length === 2) {
+      // Two sensors: S1= S2= — ignore manual rate
+      const [s1, s2] = filled;
+      const d1 = hasSp ? fmtV(parseFloat(s1[1]) - sp) : "";
+      const d2 = hasSp ? fmtV(parseFloat(s2[1]) - sp) : "";
+      rows.push(createRow(resolvedPfx + "Temp",
+        `S${s1[0]}=${d1}\nS${s2[0]}=${d2}`,
+        `S${s1[0]}=${s1[1]}\nS${s2[0]}=${s2[1]}`,
+        hasSp ? String(sp) : "", "°C"));
+
+    } else {
+      // 3+ sensors OR manual rate only: use avg or manual rate
+      const displayRate = rateStr || (sensAvg !== null ? fmtV(sensAvg) : "");
+      const diff = hasSp && displayRate ? fmtV(parseFloat(displayRate) - sp) : "";
+      rows.push(createRow(resolvedPfx + "Temp", diff, displayRate, hasSp ? String(sp) : "", "°C"));
+    }
+
+    // Chemical sensors
+    const chemMappings = {
+      nh3:   ["High NH3",    "PPM"],
+      co2:   ["High CO2",    "PPM"],
+      hum:   [isLow ? "Low Humidity" : "High Humidity", "%"],
       press: ["High Pressure", "PA"]
     };
-
-    Object.entries(chemMapppings).forEach(([key, [status, unit]]) => {
+    Object.entries(chemMappings).forEach(([key, [status, unit]]) => {
       if (r[key]) rows.push(createRow(status, "", r[key], hasSp ? String(sp) : "", unit));
     });
   }

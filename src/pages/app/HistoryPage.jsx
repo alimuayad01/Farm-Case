@@ -113,7 +113,11 @@ function CaseModal({ c, templates, onClose, onDelete, onUpdate, excelMapping }) 
               <button className="btn btn-ghost" onClick={() => { navigator.clipboard.writeText(buildEnglishText(c, templates)); showToast("Copied EN", "success"); }} style={{ border: "1px solid var(--border)" }}>📱 EN</button>
               <button className="btn btn-ghost" onClick={() => { 
                 const rows = getSheetRows(c, excelMapping?.typeMapping || excelMapping, excelMapping?.columnOrder);
-                navigator.clipboard.writeText(rows.map(r => r.join("\t")).join("\n"));
+                const tsv = rows.map(r => r.map(v => {
+                  const s = String(v);
+                  return s.includes("\n") || s.includes('"') ? `"${s.replace(/"/g,'""')}"` : s;
+                }).join("\t")).join("\n");
+                navigator.clipboard.writeText(tsv);
                 showToast("تم نسخ الإكسل", "success");
               }} style={{ border: "1px solid var(--border)" }}>📊 Excel</button>
            </div>
@@ -173,7 +177,7 @@ export default function HistoryPage({ user }) {
            </div>
            <div className="flex gap-2">
               <button className="btn btn-ghost btn-sm" onClick={() => setShowExcelSettings(true)}>⚙️ إعدادات الإكسل</button>
-              <input className="form-input" style={{ width: "200px" }} placeholder="🔍 بحث في مزارعي..." value={search} onChange={e => setSearch(e.target.value)} />
+              <input className="form-input" style={{ width: "200px" }} placeholder="--" value={search} onChange={e => setSearch(e.target.value)} />
            </div>
         </div>
       </div>

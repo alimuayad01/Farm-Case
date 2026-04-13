@@ -1,7 +1,7 @@
 import { useRef, useEffect } from "react";
 
 /* ─── IntInput ──────────────────────────────────────────────────────────────── */
-export default function IntInput({ value, onChange, placeholder = "——", step = 1, color }) {
+export default function IntInput({ value, onChange, placeholder = "--", step = 1, color }) {
   const ref = useRef();
   const str = String(value ?? "");
   useEffect(() => {
